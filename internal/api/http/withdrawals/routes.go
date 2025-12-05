@@ -5,7 +5,7 @@ import (
 )
 
 func NewWithdrawalsRoute(r chi.Router, handler *WithdrawalsHandler) {
-	r.Route("/", func(r chi.Router) {
-		r.Get("/withdrawals", handler.Withdrawals)
-	})
+
+	r.Get("/withdrawals", handler.Withdrawals)
+
 }

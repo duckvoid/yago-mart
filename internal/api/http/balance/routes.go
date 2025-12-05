@@ -5,8 +5,6 @@ import (
 )
 
 func NewBalanceRoute(r chi.Router, handler *BalanceHandler) {
-	r.Route("/", func(r chi.Router) {
-		r.Get("/balance", handler.Balance)
-		r.Post("/balance/withdraw", handler.BalanceWithdraw)
-	})
+	r.Get("/balance", handler.Balance)
+	r.Post("/balance/withdraw", handler.BalanceWithdraw)
 }

@@ -10,7 +10,7 @@ type WithdrawalsHandler struct {
 	svc *service.UserService
 }
 
-func NewUserHandler(service *service.UserService) *WithdrawalsHandler {
+func NewWithdrawalsHandler(service *service.UserService) *WithdrawalsHandler {
 	return &WithdrawalsHandler{svc: service}
 }
 

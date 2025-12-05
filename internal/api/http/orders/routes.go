@@ -5,8 +5,6 @@ import (
 )
 
 func NewOrdersRoute(r chi.Router, handler *OrdersHandler) {
-	r.Route("/", func(r chi.Router) {
-		r.Post("/orders", handler.Orders)
-		r.Get("/orders", handler.Orders)
-	})
+	r.Post("/orders", handler.Create)
+	r.Get("/orders", handler.List)
 }

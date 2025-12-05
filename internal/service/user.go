@@ -3,11 +3,9 @@ package service
 import "github.com/duckvoid/yago-mart/internal/model"
 
 type UserRepository interface {
-	All() []*model.User
-	Get(id int64) (*model.User, error)
+	All() ([]*model.User, error)
+	Get(username string) (*model.User, error)
 	Create(user *model.User) error
-	Update(user *model.User) error
-	Delete(id int64) error
 }
 
 type UserService struct {
@@ -18,10 +16,18 @@ func NewUserService(repo UserRepository) *UserService {
 	return &UserService{repo: repo}
 }
 
-func (s *UserService) Create(login string, password string) error {
+func (u *UserService) All() ([]*model.User, error) {
+	return u.repo.All()
+}
+
+func (u *UserService) Get(login string) (*model.User, error) {
+	return u.repo.Get(login)
+}
+
+func (u *UserService) Create(username string, password string) error {
 	user := &model.User{
-		Login:    login,
+		Name:     username,
 		Password: password,
 	}
-	return s.repo.Create(user)
+	return u.repo.Create(user)
 }

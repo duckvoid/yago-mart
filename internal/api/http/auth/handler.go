@@ -36,4 +36,24 @@ func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {}
+func (a *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	var req LoginRequest
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	token, err := a.svc.Login(req.Login, req.Password)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(LoginResponse{
+		Message: fmt.Sprintf("User %s succesfully login", req.Login),
+		Code:    http.StatusOK,
+		Token:   token,
+	})
+}

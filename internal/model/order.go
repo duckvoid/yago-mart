@@ -12,7 +12,7 @@ const (
 )
 
 type Order struct {
-	ID         int64
+	ID         int
 	UserID     int64
 	Username   string
 	Status     OrderStatus

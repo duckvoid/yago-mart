@@ -2,11 +2,11 @@ package ordersapi
 
 type CreateRequest struct {
 	Username string `json:"username"`
-	OrderID  int64  `json:"order_id"`
+	OrderID  int    `json:"order_id"`
 }
 
 type CreateResponse struct {
-	OrderID int64  `json:"order_id"`
+	OrderID int    `json:"order_id"`
 	Message string `json:"message"`
 	Code    int    `json:"code"`
 }
@@ -20,7 +20,7 @@ type ListResponse struct {
 }
 
 type OrderResponse struct {
-	Number     int64  `json:"number"`
+	Number     int    `json:"number"`
 	Status     string `json:"status"`
 	Accrual    int    `json:"accrual,omitempty"`
 	UploadedAt string `json:"uploaded_at,omitempty"`

@@ -25,6 +25,11 @@ func (o *OrdersHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !o.svc.LuhnValidation(req.OrderID) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+
 	if err := o.svc.Create(req.Username, req.OrderID); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return

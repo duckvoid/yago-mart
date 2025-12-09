@@ -1,4 +1,4 @@
-package withdrawalsapi
+package withdrawals
 
 import (
 	"net/http"
@@ -6,12 +6,12 @@ import (
 	"github.com/duckvoid/yago-mart/internal/service"
 )
 
-type WithdrawalsHandler struct {
+type Handler struct {
 	svc *service.UserService
 }
 
-func NewWithdrawalsHandler(service *service.UserService) *WithdrawalsHandler {
-	return &WithdrawalsHandler{svc: service}
+func NewWithdrawalsHandler(service *service.UserService) *Handler {
+	return &Handler{svc: service}
 }
 
-func (u *WithdrawalsHandler) Withdrawals(w http.ResponseWriter, r *http.Request) {}
+func (u *Handler) Withdrawals(w http.ResponseWriter, r *http.Request) {}

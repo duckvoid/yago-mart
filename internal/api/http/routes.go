@@ -1,4 +1,4 @@
-package httpapi
+package http
 
 import (
 	authapi "github.com/duckvoid/yago-mart/internal/api/http/auth"

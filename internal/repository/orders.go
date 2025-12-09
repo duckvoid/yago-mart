@@ -4,7 +4,7 @@ import (
 	"context"
 	"embed"
 
-	"github.com/duckvoid/yago-mart/internal/model"
+	"github.com/duckvoid/yago-mart/internal/domain/order"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -22,23 +22,23 @@ func NewOrdersRepository(ctx context.Context, db *sqlx.DB) *OrdersRepository {
 	return &OrdersRepository{ctx: ctx, db: db}
 }
 
-func (o *OrdersRepository) All() []*model.Order {
+func (o *OrdersRepository) All() []*order.Order {
 	return nil
 }
 
-func (o *OrdersRepository) Get(id int64) (*model.Order, error) {
+func (o *OrdersRepository) Get(id int64) (*order.Order, error) {
 	return nil, nil
 }
 
-func (o *OrdersRepository) GetByUser(username string) ([]*model.Order, error) {
+func (o *OrdersRepository) GetByUser(username string) ([]*order.Order, error) {
 	return nil, nil
 }
 
-func (o *OrdersRepository) Create(order *model.Order) error {
+func (o *OrdersRepository) Create(order *order.Order) error {
 	return nil
 }
 
-func (o *OrdersRepository) Update(order *model.Order) error {
+func (o *OrdersRepository) Update(order *order.Order) error {
 	return nil
 }
 

@@ -1,4 +1,4 @@
-package model
+package balance
 
 type Balance struct {
 	UserID    int64

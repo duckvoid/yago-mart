@@ -1,4 +1,4 @@
-package balanceapi
+package balance
 
 type BalanceResponse struct {
 	Current   float64 `json:"current"`

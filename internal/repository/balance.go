@@ -4,7 +4,7 @@ import (
 	"context"
 	"embed"
 
-	"github.com/duckvoid/yago-mart/internal/model"
+	"github.com/duckvoid/yago-mart/internal/domain/balance"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -22,7 +22,7 @@ func NewBalanceRepository(ctx context.Context, db *sqlx.DB) *BalanceRepository {
 	return &BalanceRepository{ctx: ctx, db: db}
 }
 
-func (b *BalanceRepository) Get(username string) (*model.Balance, error) {
+func (b *BalanceRepository) Get(username string) (*balance.Balance, error) {
 	return nil, nil
 }
 func (b *BalanceRepository) Accrual(username string, value float64) error {

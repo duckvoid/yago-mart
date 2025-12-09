@@ -1,4 +1,4 @@
-package httpapi
+package http
 
 import (
 	authapi "github.com/duckvoid/yago-mart/internal/api/http/auth"
@@ -8,8 +8,8 @@ import (
 )
 
 type Handlers struct {
-	Auth        *authapi.AuthHandler
-	Balance     *balanceapi.BalanceHandler
-	Orders      *ordersapi.OrdersHandler
-	Withdrawals *withdrawalsapi.WithdrawalsHandler
+	Auth        *authapi.Handler
+	Balance     *balanceapi.Handler
+	Orders      *ordersapi.Handler
+	Withdrawals *withdrawalsapi.Handler
 }

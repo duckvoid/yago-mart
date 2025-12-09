@@ -1,1 +1,1 @@
-package withdrawalsapi
+package withdrawals

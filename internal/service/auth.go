@@ -5,6 +5,7 @@ import (
 
 	"github.com/duckvoid/yago-mart/internal/logger"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -27,7 +28,7 @@ func (a *AuthService) Register(username, password string) error {
 }
 
 func (a *AuthService) Login(username, password string) (string, error) {
-	user, err := a.userSvc.Get(username)
+	user, err := a.userSvc.Get(username, password)
 	if err != nil {
 		return "", err
 	}
@@ -53,5 +54,29 @@ func (a *AuthService) Login(username, password string) (string, error) {
 	}
 
 	return tokenString, nil
+}
 
+func ValidateAuthToken(authToken string) error {
+	token, err := jwt.ParseWithClaims(authToken, &jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secretKey), nil
+	})
+	if err != nil {
+		return err
+	}
+
+	claims, ok := token.Claims.(*jwt.MapClaims)
+	if !ok || !token.Valid {
+		return errors.New("invalid token")
+	}
+
+	expTime, err := claims.GetExpirationTime()
+	if err != nil {
+		return err
+	}
+
+	if expTime.Before(time.Now()) {
+		return errors.New("token is expired")
+	}
+
+	return nil
 }

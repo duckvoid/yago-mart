@@ -1,4 +1,4 @@
-package ordersapi
+package orders
 
 import (
 	"encoding/json"
@@ -9,15 +9,15 @@ import (
 	"github.com/duckvoid/yago-mart/internal/service"
 )
 
-type OrdersHandler struct {
+type Handler struct {
 	svc *service.OrderService
 }
 
-func NewOrdersHandler(service *service.OrderService) *OrdersHandler {
-	return &OrdersHandler{svc: service}
+func NewOrdersHandler(service *service.OrderService) *Handler {
+	return &Handler{svc: service}
 }
 
-func (o *OrdersHandler) Create(w http.ResponseWriter, r *http.Request) {
+func (o *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	var req CreateRequest
 
 	if json.NewDecoder(r.Body).Decode(&req) != nil {
@@ -41,7 +41,7 @@ func (o *OrdersHandler) Create(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (o *OrdersHandler) List(w http.ResponseWriter, r *http.Request) {
+func (o *Handler) List(w http.ResponseWriter, r *http.Request) {
 	var req ListRequest
 	if json.NewDecoder(r.Body).Decode(&req) != nil {
 		w.WriteHeader(http.StatusBadRequest)

@@ -1,4 +1,4 @@
-package authapi
+package auth
 
 type RegisterRequest struct {
 	Login    string `json:"login"`

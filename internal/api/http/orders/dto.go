@@ -1,4 +1,4 @@
-package ordersapi
+package orders
 
 type CreateRequest struct {
 	Username string `json:"username"`

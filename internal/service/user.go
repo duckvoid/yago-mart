@@ -1,31 +1,27 @@
 package service
 
-import "github.com/duckvoid/yago-mart/internal/model"
-
-type UserRepository interface {
-	All() ([]*model.User, error)
-	Get(username string) (*model.User, error)
-	Create(user *model.User) error
-}
+import (
+	userdomain "github.com/duckvoid/yago-mart/internal/domain/user"
+)
 
 type UserService struct {
-	repo UserRepository
+	repo userdomain.Repository
 }
 
-func NewUserService(repo UserRepository) *UserService {
+func NewUserService(repo userdomain.Repository) *UserService {
 	return &UserService{repo: repo}
 }
 
-func (u *UserService) All() ([]*model.User, error) {
+func (u *UserService) All() ([]*userdomain.User, error) {
 	return u.repo.All()
 }
 
-func (u *UserService) Get(login string) (*model.User, error) {
-	return u.repo.Get(login)
+func (u *UserService) Get(login string, password string) (*userdomain.User, error) {
+	return u.repo.Get(login, password)
 }
 
 func (u *UserService) Create(username string, password string) error {
-	user := &model.User{
+	user := &userdomain.User{
 		Name:     username,
 		Password: password,
 	}

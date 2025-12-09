@@ -1,17 +1,14 @@
 package service
 
-import "github.com/duckvoid/yago-mart/internal/model"
+import (
+	balancedomain "github.com/duckvoid/yago-mart/internal/domain/balance"
+)
 
-type BalanceRepository interface {
-	Get(username string) (*model.Balance, error)
-	Accrual(username string, value float64) error
-	Withdrawal(username string, value float64) error
-}
 type BalanceService struct {
-	repo BalanceRepository
+	repo balancedomain.Repository
 }
 
-func NewBalanceService(repo BalanceRepository) *BalanceService {
+func NewBalanceService(repo balancedomain.Repository) *BalanceService {
 	return &BalanceService{
 		repo: repo,
 	}

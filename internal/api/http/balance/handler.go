@@ -1,4 +1,4 @@
-package balanceapi
+package balance
 
 import (
 	"encoding/json"
@@ -7,15 +7,15 @@ import (
 	"github.com/duckvoid/yago-mart/internal/service"
 )
 
-type BalanceHandler struct {
+type Handler struct {
 	svc *service.BalanceService
 }
 
-func NewBalanceHandler(service *service.BalanceService) *BalanceHandler {
-	return &BalanceHandler{svc: service}
+func NewBalanceHandler(service *service.BalanceService) *Handler {
+	return &Handler{svc: service}
 }
 
-func (b *BalanceHandler) Balance(w http.ResponseWriter, r *http.Request) {
+func (b *Handler) Balance(w http.ResponseWriter, r *http.Request) {
 	balance, withdrawn, err := b.svc.Get("")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -28,4 +28,4 @@ func (b *BalanceHandler) Balance(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (b *BalanceHandler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {}
+func (b *Handler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {}

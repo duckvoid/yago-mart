@@ -1,11 +1,10 @@
 package middlewares
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/duckvoid/yago-mart/internal/service"
 )
 
 func AuthenticateMiddleware(next http.Handler) http.Handler {
@@ -19,16 +18,11 @@ func AuthenticateMiddleware(next http.Handler) http.Handler {
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if err := service.ValidateAuthToken(tokenString); err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
 			return
-		})
+		}
 
 		next.ServeHTTP(w, r)
-	})
-}
-
-func parseToken(tokenString string) (*jwt.Token, error) {
-	return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		ret
 	})
 }

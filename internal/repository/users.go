@@ -3,9 +3,13 @@ package repository
 import (
 	"context"
 	"embed"
+	"errors"
 
-	"github.com/duckvoid/yago-mart/internal/model"
+	userdomain "github.com/duckvoid/yago-mart/internal/domain/user"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 const UsersTable = "users"
@@ -22,7 +26,7 @@ func NewUsersRepository(ctx context.Context, db *sqlx.DB) *UsersRepository {
 	return &UsersRepository{ctx: ctx, db: db}
 }
 
-func (u *UsersRepository) All() ([]*model.User, error) {
+func (u *UsersRepository) All() ([]*userdomain.User, error) {
 	rows, err := u.db.QueryxContext(u.ctx, `SELECT * FROM users`)
 	if err != nil {
 		return nil, err
@@ -35,9 +39,9 @@ func (u *UsersRepository) All() ([]*model.User, error) {
 		return nil, err
 	}
 
-	var users []*model.User
+	var users []*userdomain.User
 	for rows.Next() {
-		var user *model.User
+		var user *userdomain.User
 		err = rows.StructScan(user)
 		if err != nil {
 			return nil, err
@@ -48,19 +52,23 @@ func (u *UsersRepository) All() ([]*model.User, error) {
 	return users, nil
 }
 
-func (u *UsersRepository) Get(username string) (*model.User, error) {
-	var user model.User
+func (u *UsersRepository) Get(username string, password string) (*userdomain.User, error) {
+	var user userdomain.User
 
-	row := u.db.QueryRowxContext(u.ctx, `SELECT * FROM users WHERE name = $1`, username)
+	row := u.db.QueryRowxContext(u.ctx, `SELECT * FROM users WHERE name = $1 AND password = $2`, username, password)
 
 	if err := row.StructScan(&user); err != nil {
+
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, userdomain.ErrNotFound
+		}
 		return nil, err
 	}
 
 	return &user, nil
 }
 
-func (u *UsersRepository) Create(user *model.User) error {
+func (u *UsersRepository) Create(user *userdomain.User) error {
 	tx, err := u.db.BeginTxx(u.ctx, nil)
 	if err != nil {
 		return err
@@ -78,6 +86,10 @@ func (u *UsersRepository) Create(user *model.User) error {
 	if _, execErr = tx.ExecContext(u.ctx,
 		`INSERT INTO users (name, password) VALUES ($1, $2)`,
 		user.Name, user.Password); execErr != nil {
+		var pgErr *pq.Error
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			return userdomain.ErrAlreadyExist
+		}
 		return execErr
 	}
 

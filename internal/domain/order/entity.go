@@ -2,20 +2,19 @@ package order
 
 import "time"
 
-type OrderStatus string
+type Status string
 
 const (
-	OrderInvalid    OrderStatus = "INVALID"
-	OrderRegistered OrderStatus = "REGISTERED"
-	OrderProcessed  OrderStatus = "PROCESSED"
-	OrderProcessing OrderStatus = "PROCESSING"
+	Invalid    Status = "INVALID"
+	Registered Status = "REGISTERED"
+	Processed  Status = "PROCESSED"
+	Processing Status = "PROCESSING"
 )
 
-type Order struct {
-	ID         int
-	UserID     int64
-	Username   string
-	Status     OrderStatus
-	Accrual    int
-	UploadDate time.Time
+type Entity struct {
+	ID          int       `db:"id"`
+	Username    string    `db:"user_name"`
+	Status      Status    `db:"status"`
+	Accrual     int       `db:"accrual"`
+	CreatedDate time.Time `db:"created_date"`
 }

@@ -3,9 +3,13 @@ package repository
 import (
 	"context"
 	"embed"
+	"errors"
 
-	"github.com/duckvoid/yago-mart/internal/domain/order"
+	orderdomain "github.com/duckvoid/yago-mart/internal/domain/order"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 const OrdersTable = "orders"
@@ -22,26 +26,113 @@ func NewOrdersRepository(ctx context.Context, db *sqlx.DB) *OrdersRepository {
 	return &OrdersRepository{ctx: ctx, db: db}
 }
 
-func (o *OrdersRepository) All() []*order.Order {
-	return nil
+func (o *OrdersRepository) All() ([]*orderdomain.Entity, error) {
+	rows, err := o.db.QueryxContext(o.ctx, `SELECT * FROM orders`)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() { _ = rows.Close() }()
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	var orders []*orderdomain.Entity
+	for rows.Next() {
+		var order *orderdomain.Entity
+		err = rows.StructScan(order)
+		if err != nil {
+			return nil, err
+		}
+		orders = append(orders, order)
+	}
+
+	return orders, nil
 }
 
-func (o *OrdersRepository) Get(id int64) (*order.Order, error) {
-	return nil, nil
+func (o *OrdersRepository) Get(id int) (*orderdomain.Entity, error) {
+	var order orderdomain.Entity
+
+	row := o.db.QueryRowxContext(o.ctx, `SELECT * FROM orders WHERE id = $1`, id)
+
+	if err := row.StructScan(&order); err != nil {
+
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, orderdomain.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return &order, nil
 }
 
-func (o *OrdersRepository) GetByUser(username string) ([]*order.Order, error) {
-	return nil, nil
+func (o *OrdersRepository) GetByUser(username string) ([]*orderdomain.Entity, error) {
+	rows, err := o.db.QueryxContext(o.ctx, `SELECT * FROM orders WHERE user_name = $1 ORDER BY created_date`, username)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, orderdomain.ErrNotFound
+		}
+		return nil, err
+	}
+
+	defer func() { _ = rows.Close() }()
+
+	if !rows.Next() {
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+		return nil, orderdomain.ErrNotFound
+	}
+
+	var orders []*orderdomain.Entity
+	for rows.Next() {
+		var order orderdomain.Entity
+		err = rows.StructScan(&order)
+		if err != nil {
+			return nil, err
+		}
+		orders = append(orders, &order)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return orders, nil
 }
 
-func (o *OrdersRepository) Create(order *order.Order) error {
-	return nil
-}
+func (o *OrdersRepository) Create(order *orderdomain.Entity) error {
+	tx, err := o.db.BeginTxx(o.ctx, nil)
+	if err != nil {
+		return err
+	}
 
-func (o *OrdersRepository) Update(order *order.Order) error {
-	return nil
-}
+	var execErr error
+	defer func() {
+		if execErr != nil {
+			_ = tx.Rollback()
+		} else {
+			execErr = tx.Commit()
+		}
+	}()
 
-func (o *OrdersRepository) Delete(id int64) error {
+	if _, execErr = tx.ExecContext(o.ctx,
+		`INSERT INTO orders (id, user_name, status) VALUES ($1, $2, $3)`,
+		order.ID, order.Username, order.Status); execErr != nil {
+		var pgErr *pq.Error
+		if errors.As(execErr, &pgErr) {
+			switch pgErr.Code {
+			case pgerrcode.UniqueViolation:
+				return orderdomain.ErrAlreadyExist
+			case pgerrcode.InvalidColumnReference:
+				return orderdomain.ErrUserNotFound
+			default:
+				return execErr
+			}
+		}
+	}
+
 	return nil
 }

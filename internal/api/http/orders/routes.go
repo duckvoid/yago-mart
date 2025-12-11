@@ -6,8 +6,11 @@ import (
 )
 
 func NewOrdersRoute(r chi.Router, handler *Handler) {
-	r.Use(middlewares.AuthenticateMiddleware)
+	r.Group(func(r chi.Router) {
+		r.Use(middlewares.AuthenticateMiddleware)
 
-	r.Post("/orders", handler.Create)
-	r.Get("/orders", handler.List)
+		r.Post("/orders", handler.Create)
+		r.Get("/orders", handler.List)
+	})
+
 }

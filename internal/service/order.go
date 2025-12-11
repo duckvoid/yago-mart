@@ -1,6 +1,8 @@
 package service
 
 import (
+	"errors"
+
 	orderdomain "github.com/duckvoid/yago-mart/internal/domain/order"
 )
 
@@ -16,17 +18,37 @@ func (o *OrderService) Create(username string, orderID int) error {
 
 	//accrual := o.accrualSvc.Get(orderID)
 
-	order := &orderdomain.Order{
+	order := &orderdomain.Entity{
 		ID:       orderID,
 		Username: username,
-		Status:   orderdomain.OrderRegistered,
+		Status:   orderdomain.Registered,
 		//Accrual: accrual,
 	}
 
-	return o.repo.Create(order)
+	err := o.repo.Create(order)
+	if err != nil {
+		if errors.Is(err, orderdomain.ErrAlreadyExist) {
+			existedOrder, err := o.Get(orderID)
+			if err != nil {
+				return err
+			}
+
+			if username != existedOrder.Username {
+				return orderdomain.ErrCreatedByAnotherUser
+			}
+		}
+
+		return err
+	}
+
+	return nil
 }
 
-func (o *OrderService) UserOrders(username string) ([]*orderdomain.Order, error) {
+func (o *OrderService) Get(id int) (*orderdomain.Entity, error) {
+	return o.repo.Get(id)
+}
+
+func (o *OrderService) UserOrders(username string) ([]*orderdomain.Entity, error) {
 	return o.repo.GetByUser(username)
 }
 

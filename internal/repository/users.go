@@ -26,7 +26,7 @@ func NewUsersRepository(ctx context.Context, db *sqlx.DB) *UsersRepository {
 	return &UsersRepository{ctx: ctx, db: db}
 }
 
-func (u *UsersRepository) All() ([]*userdomain.User, error) {
+func (u *UsersRepository) All() ([]*userdomain.Entity, error) {
 	rows, err := u.db.QueryxContext(u.ctx, `SELECT * FROM users`)
 	if err != nil {
 		return nil, err
@@ -39,9 +39,9 @@ func (u *UsersRepository) All() ([]*userdomain.User, error) {
 		return nil, err
 	}
 
-	var users []*userdomain.User
+	var users []*userdomain.Entity
 	for rows.Next() {
-		var user *userdomain.User
+		var user *userdomain.Entity
 		err = rows.StructScan(user)
 		if err != nil {
 			return nil, err
@@ -52,10 +52,10 @@ func (u *UsersRepository) All() ([]*userdomain.User, error) {
 	return users, nil
 }
 
-func (u *UsersRepository) Get(username string, password string) (*userdomain.User, error) {
-	var user userdomain.User
+func (u *UsersRepository) Get(username string) (*userdomain.Entity, error) {
+	var user userdomain.Entity
 
-	row := u.db.QueryRowxContext(u.ctx, `SELECT * FROM users WHERE name = $1 AND password = $2`, username, password)
+	row := u.db.QueryRowxContext(u.ctx, `SELECT * FROM users WHERE name = $1`, username)
 
 	if err := row.StructScan(&user); err != nil {
 
@@ -68,7 +68,7 @@ func (u *UsersRepository) Get(username string, password string) (*userdomain.Use
 	return &user, nil
 }
 
-func (u *UsersRepository) Create(user *userdomain.User) error {
+func (u *UsersRepository) Create(user *userdomain.Entity) error {
 	tx, err := u.db.BeginTxx(u.ctx, nil)
 	if err != nil {
 		return err
@@ -87,7 +87,7 @@ func (u *UsersRepository) Create(user *userdomain.User) error {
 		`INSERT INTO users (name, password) VALUES ($1, $2)`,
 		user.Name, user.Password); execErr != nil {
 		var pgErr *pq.Error
-		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+		if errors.As(execErr, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			return userdomain.ErrAlreadyExist
 		}
 		return execErr

@@ -12,16 +12,16 @@ func NewUserService(repo userdomain.Repository) *UserService {
 	return &UserService{repo: repo}
 }
 
-func (u *UserService) All() ([]*userdomain.User, error) {
+func (u *UserService) All() ([]*userdomain.Entity, error) {
 	return u.repo.All()
 }
 
-func (u *UserService) Get(login string, password string) (*userdomain.User, error) {
-	return u.repo.Get(login, password)
+func (u *UserService) Get(login string) (*userdomain.Entity, error) {
+	return u.repo.Get(login)
 }
 
 func (u *UserService) Create(username string, password string) error {
-	user := &userdomain.User{
+	user := &userdomain.Entity{
 		Name:     username,
 		Password: password,
 	}

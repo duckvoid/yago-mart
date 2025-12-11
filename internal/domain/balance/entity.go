@@ -1,8 +1,7 @@
 package balance
 
-type Balance struct {
-	UserID    int64
-	Username  string
-	Current   float64
-	Withdrawn float64
+type Entity struct {
+	Username  string  `db:"user_name"`
+	Current   float64 `db:"current"`
+	Withdrawn float64 `db:"withdrawn"`
 }

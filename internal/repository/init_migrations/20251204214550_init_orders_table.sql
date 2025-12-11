@@ -1,8 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE orders (
-    id BIGINT,
-    user_id   INTEGER PRIMARY KEY REFERENCES users(id),
+    id BIGINT PRIMARY KEY,
     user_name TEXT REFERENCES users(name),
     status TEXT,
     accrual INT DEFAULT 0,

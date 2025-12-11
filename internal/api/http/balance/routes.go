@@ -6,8 +6,10 @@ import (
 )
 
 func NewBalanceRoute(r chi.Router, handler *Handler) {
-	r.Use(middlewares.AuthenticateMiddleware)
+	r.Group(func(r chi.Router) {
+		r.Use(middlewares.AuthenticateMiddleware)
 
-	r.Get("/balance", handler.Balance)
-	r.Post("/balance/withdraw", handler.BalanceWithdraw)
+		r.Get("/balance", handler.Balance)
+		r.Post("/balance/withdraw", handler.BalanceWithdraw)
+	})
 }

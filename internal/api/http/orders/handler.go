@@ -1,13 +1,19 @@
 package orders
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
-	"time"
+	"strconv"
 
+	orderdomain "github.com/duckvoid/yago-mart/internal/domain/order"
 	"github.com/duckvoid/yago-mart/internal/service"
 )
+
+const maxBodySizeMib = 25
 
 type Handler struct {
 	svc *service.OrderService
@@ -18,51 +24,78 @@ func NewOrdersHandler(service *service.OrderService) *Handler {
 }
 
 func (o *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	var req CreateRequest
-
-	if json.NewDecoder(r.Body).Decode(&req) != nil {
-		w.WriteHeader(http.StatusBadRequest)
+	if r.Header.Get("Content-Type") != "text/plain" {
+		http.Error(w, "Content-Type must be text/plain", http.StatusUnsupportedMediaType)
 		return
 	}
 
-	if !o.svc.LuhnValidation(req.OrderID) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxBodySizeMib<<20)
+
+	var buf bytes.Buffer
+	tee := io.TeeReader(r.Body, &buf)
+
+	bodyBytes, err := io.ReadAll(tee)
+	if err != nil {
+		return
+	}
+
+	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+	orderID, err := strconv.Atoi(string(bodyBytes))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if !o.svc.LuhnValidation(orderID) {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
-	if err := o.svc.Create(req.Username, req.OrderID); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+	user := r.Context().Value("user").(string)
+
+	if err := o.svc.Create(user, orderID); err != nil {
+		switch {
+		case errors.Is(err, orderdomain.ErrCreatedByAnotherUser):
+			http.Error(w, err.Error(), http.StatusConflict)
+		case errors.Is(err, orderdomain.ErrAlreadyExist):
+			w.WriteHeader(http.StatusOK)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
+	w.WriteHeader(http.StatusAccepted)
 	_ = json.NewEncoder(w).Encode(CreateResponse{
-		Message: fmt.Sprintf("Order %d succesfully created", req.OrderID),
-		Code:    http.StatusOK,
+		Message: fmt.Sprintf("Order %d succesfully created", orderID),
+		Code:    http.StatusAccepted,
 	})
 }
 
 func (o *Handler) List(w http.ResponseWriter, r *http.Request) {
-	var req ListRequest
-	if json.NewDecoder(r.Body).Decode(&req) != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	user := r.Context().Value("user").(string)
 
-	orders, err := o.svc.UserOrders(req.Username)
+	orders, err := o.svc.UserOrders(user)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		switch {
+		case errors.Is(err, orderdomain.ErrNotFound):
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
 	var resp ListResponse
 	for _, order := range orders {
 		resp.Orders = append(resp.Orders, OrderResponse{
-			Number:     order.ID,
-			Status:     string(order.Status),
-			Accrual:    order.Accrual,
-			UploadedAt: order.UploadDate.Format(time.RFC3339),
+			Number:  order.ID,
+			Status:  string(order.Status),
+			Accrual: order.Accrual,
 		})
 	}
 
+	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(resp)
 }

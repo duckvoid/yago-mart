@@ -28,7 +28,7 @@ func (a *AuthService) Register(username, password string) error {
 }
 
 func (a *AuthService) Login(username, password string) (string, error) {
-	user, err := a.userSvc.Get(username, password)
+	user, err := a.userSvc.Get(username)
 	if err != nil {
 		return "", err
 	}
@@ -56,27 +56,29 @@ func (a *AuthService) Login(username, password string) (string, error) {
 	return tokenString, nil
 }
 
-func ValidateAuthToken(authToken string) error {
+func AuthToken(authToken string) (string, error) {
 	token, err := jwt.ParseWithClaims(authToken, &jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(secretKey), nil
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	claims, ok := token.Claims.(*jwt.MapClaims)
 	if !ok || !token.Valid {
-		return errors.New("invalid token")
+		return "", errors.New("invalid token")
 	}
+
+	username, _ := (*claims)["username"].(string)
 
 	expTime, err := claims.GetExpirationTime()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if expTime.Before(time.Now()) {
-		return errors.New("token is expired")
+		return "", errors.New("token is expired")
 	}
 
-	return nil
+	return username, nil
 }

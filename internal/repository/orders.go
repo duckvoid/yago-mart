@@ -71,20 +71,10 @@ func (o *OrdersRepository) Get(id int) (*orderdomain.Entity, error) {
 func (o *OrdersRepository) GetByUser(username string) ([]*orderdomain.Entity, error) {
 	rows, err := o.db.QueryxContext(o.ctx, `SELECT * FROM orders WHERE user_name = $1 ORDER BY created_date`, username)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, orderdomain.ErrNotFound
-		}
 		return nil, err
 	}
 
 	defer func() { _ = rows.Close() }()
-
-	if !rows.Next() {
-		if err := rows.Err(); err != nil {
-			return nil, err
-		}
-		return nil, orderdomain.ErrNotFound
-	}
 
 	var orders []*orderdomain.Entity
 	for rows.Next() {
@@ -98,6 +88,10 @@ func (o *OrdersRepository) GetByUser(username string) ([]*orderdomain.Entity, er
 
 	if err := rows.Err(); err != nil {
 		return nil, err
+	}
+
+	if len(orders) == 0 {
+		return nil, orderdomain.ErrNotFound
 	}
 
 	return orders, nil

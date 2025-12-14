@@ -1,17 +1,47 @@
 package withdrawals
 
 import (
+	"encoding/json"
+	"errors"
 	"net/http"
+	"strconv"
+	"time"
 
+	withdrawalsdomain "github.com/duckvoid/yago-mart/internal/domain/withdrawals"
 	"github.com/duckvoid/yago-mart/internal/service"
 )
 
 type Handler struct {
-	svc *service.UserService
+	svc *service.WithdrawalsService
 }
 
-func NewWithdrawalsHandler(service *service.UserService) *Handler {
+func NewWithdrawalsHandler(service *service.WithdrawalsService) *Handler {
 	return &Handler{svc: service}
 }
 
-func (u *Handler) Withdrawals(w http.ResponseWriter, r *http.Request) {}
+func (h *Handler) Withdrawals(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value("user").(string)
+
+	withdrawals, err := h.svc.UserWithdrawals(user)
+	if err != nil {
+		switch {
+		case errors.Is(err, withdrawalsdomain.ErrNotFound):
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	var resp []WithdrawalResponse
+	for _, withdrawal := range withdrawals {
+		resp = append(resp, WithdrawalResponse{
+			OrderID:     strconv.Itoa(withdrawal.OrderID),
+			Sum:         withdrawal.Sum,
+			ProcessedAt: withdrawal.ProcessedAt.Format(time.RFC3339),
+		})
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(resp)
+}

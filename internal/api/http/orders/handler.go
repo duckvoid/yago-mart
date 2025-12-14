@@ -11,6 +11,7 @@ import (
 
 	orderdomain "github.com/duckvoid/yago-mart/internal/domain/order"
 	"github.com/duckvoid/yago-mart/internal/service"
+	"github.com/go-chi/chi/v5"
 )
 
 const maxBodySizeMib = 25
@@ -90,7 +91,7 @@ func (o *Handler) List(w http.ResponseWriter, r *http.Request) {
 	var resp ListResponse
 	for _, order := range orders {
 		resp.Orders = append(resp.Orders, OrderResponse{
-			Number:  order.ID,
+			Number:  strconv.Itoa(order.ID),
 			Status:  string(order.Status),
 			Accrual: order.Accrual,
 		})
@@ -98,4 +99,37 @@ func (o *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(resp)
+}
+
+func (o *Handler) Get(w http.ResponseWriter, r *http.Request) {
+	number := chi.URLParam(r, "number")
+
+	orderID, err := strconv.Atoi(number)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if !o.svc.LuhnValidation(orderID) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+
+	order, err := o.svc.Get(orderID)
+	if err != nil {
+		switch {
+		case errors.Is(err, orderdomain.ErrNotFound):
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(OrderResponse{
+		Number:  strconv.Itoa(order.ID),
+		Status:  string(order.Status),
+		Accrual: order.Accrual,
+	})
 }

@@ -20,7 +20,7 @@ type ListResponse struct {
 }
 
 type OrderResponse struct {
-	Number     int    `json:"number"`
+	Number     string `json:"number"`
 	Status     string `json:"status"`
 	Accrual    int    `json:"accrual,omitempty"`
 	UploadedAt string `json:"uploaded_at,omitempty"`

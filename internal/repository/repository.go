@@ -13,9 +13,10 @@ import (
 )
 
 type Repository struct {
-	Users   *UsersRepository
-	Orders  *OrdersRepository
-	Balance *BalanceRepository
+	Users       *UsersRepository
+	Orders      *OrdersRepository
+	Balance     *BalanceRepository
+	Withdrawals *WithdrawalsRepository
 }
 
 func NewRepository(ctx context.Context, database string) (*Repository, error) {
@@ -28,6 +29,7 @@ func NewRepository(ctx context.Context, database string) (*Repository, error) {
 		func() error { return initTable(ctx, db, UsersTable, embedInitUsersMigration) },
 		func() error { return initTable(ctx, db, BalanceTable, embedInitBalanceMigration) },
 		func() error { return initTable(ctx, db, OrdersTable, embedInitOrdersMigration) },
+		func() error { return initTable(ctx, db, WithdrawalsTable, embedInitWithdrawalsMigration) },
 	}
 
 	for _, init := range tableInits {
@@ -37,9 +39,10 @@ func NewRepository(ctx context.Context, database string) (*Repository, error) {
 	}
 
 	repo := &Repository{
-		Users:   NewUsersRepository(ctx, db),
-		Orders:  NewOrdersRepository(ctx, db),
-		Balance: NewBalanceRepository(ctx, db),
+		Users:       NewUsersRepository(ctx, db),
+		Orders:      NewOrdersRepository(ctx, db),
+		Balance:     NewBalanceRepository(ctx, db),
+		Withdrawals: NewWithdrawalsRepository(ctx, db),
 	}
 
 	return repo, nil

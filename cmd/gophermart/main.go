@@ -39,13 +39,14 @@ func main() {
 	userSvc := service.NewUserService(repo.Users)
 	authSvc := service.NewAuthService(userSvc)
 	orderSvc := service.NewOrderService(repo.Orders)
-	balanceSvc := service.NewBalanceService(repo.Balance)
+	balanceSvc := service.NewBalanceService(repo.Balance, orderSvc)
+	withdrawalsSvc := service.NewWithdrawalsService(repo.Withdrawals)
 
 	handlers := httpapi.Handlers{
 		Orders:      ordersapi.NewOrdersHandler(orderSvc),
 		Auth:        authapi.NewAuthHandler(authSvc),
 		Balance:     balanceapi.NewBalanceHandler(balanceSvc),
-		Withdrawals: withdrawalsapi.NewWithdrawalsHandler(userSvc),
+		Withdrawals: withdrawalsapi.NewWithdrawalsHandler(withdrawalsSvc),
 	}
 
 	srv := server.New(cfg, handlers)

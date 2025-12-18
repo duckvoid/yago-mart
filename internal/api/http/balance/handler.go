@@ -1,12 +1,14 @@
 package balance
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"net/http"
 
 	balancedomain "github.com/duckvoid/yago-mart/internal/domain/balance"
 	"github.com/duckvoid/yago-mart/internal/domain/order"
+	"github.com/duckvoid/yago-mart/internal/logger"
 	"github.com/duckvoid/yago-mart/internal/service"
 )
 
@@ -31,11 +33,20 @@ func (b *Handler) Balance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(CurrentBalanceResponse{
+	var respBuf bytes.Buffer
+	if err := json.NewEncoder(w).Encode(CurrentBalanceResponse{
 		Current:   balance.Current,
 		Withdrawn: balance.Withdrawn,
-	})
+	}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(respBuf.Bytes()); err != nil {
+		logger.Log.Error(err.Error())
+	}
 }
 
 func (b *Handler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {

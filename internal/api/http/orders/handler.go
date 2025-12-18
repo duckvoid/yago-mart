@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	orderdomain "github.com/duckvoid/yago-mart/internal/domain/order"
+	"github.com/duckvoid/yago-mart/internal/logger"
 	"github.com/duckvoid/yago-mart/internal/service"
 	"github.com/go-chi/chi/v5"
 )
@@ -70,11 +71,20 @@ func (o *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusAccepted)
-	_ = json.NewEncoder(w).Encode(CreateResponse{
+	var respBuf bytes.Buffer
+	if err := json.NewEncoder(w).Encode(CreateResponse{
 		Message: fmt.Sprintf("Order %d succesfully created", orderID),
 		Code:    http.StatusAccepted,
-	})
+	}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(respBuf.Bytes()); err != nil {
+		logger.Log.Error(err.Error())
+	}
 }
 
 func (o *Handler) List(w http.ResponseWriter, r *http.Request) {
@@ -103,8 +113,17 @@ func (o *Handler) List(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	var respBuf bytes.Buffer
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(resp)
+	if _, err := w.Write(respBuf.Bytes()); err != nil {
+		logger.Log.Error(err.Error())
+	}
 }
 
 func (o *Handler) Get(w http.ResponseWriter, r *http.Request) {
@@ -132,10 +151,19 @@ func (o *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(OrderResponse{
+	var respBuf bytes.Buffer
+	if err := json.NewEncoder(w).Encode(OrderResponse{
 		Number:  strconv.Itoa(order.ID),
 		Status:  string(order.Status),
 		Accrual: order.Accrual,
-	})
+	}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(respBuf.Bytes()); err != nil {
+		logger.Log.Error(err.Error())
+	}
 }

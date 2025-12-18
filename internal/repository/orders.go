@@ -18,16 +18,15 @@ const OrdersTable = "orders"
 var embedInitOrdersMigration embed.FS
 
 type OrdersRepository struct {
-	ctx context.Context
-	db  *sqlx.DB
+	db *sqlx.DB
 }
 
-func NewOrdersRepository(ctx context.Context, db *sqlx.DB) *OrdersRepository {
-	return &OrdersRepository{ctx: ctx, db: db}
+func NewOrdersRepository(db *sqlx.DB) *OrdersRepository {
+	return &OrdersRepository{db: db}
 }
 
-func (o *OrdersRepository) All() ([]*orderdomain.Entity, error) {
-	rows, err := o.db.QueryxContext(o.ctx, `SELECT * FROM orders`)
+func (o *OrdersRepository) All(ctx context.Context) ([]*orderdomain.Entity, error) {
+	rows, err := o.db.QueryxContext(ctx, `SELECT * FROM orders`)
 	if err != nil {
 		return nil, err
 	}
@@ -52,10 +51,10 @@ func (o *OrdersRepository) All() ([]*orderdomain.Entity, error) {
 	return orders, nil
 }
 
-func (o *OrdersRepository) Get(id int) (*orderdomain.Entity, error) {
+func (o *OrdersRepository) Get(ctx context.Context, id int) (*orderdomain.Entity, error) {
 	var order orderdomain.Entity
 
-	row := o.db.QueryRowxContext(o.ctx, `SELECT * FROM orders WHERE id = $1`, id)
+	row := o.db.QueryRowxContext(ctx, `SELECT * FROM orders WHERE id = $1`, id)
 
 	if err := row.StructScan(&order); err != nil {
 
@@ -68,8 +67,8 @@ func (o *OrdersRepository) Get(id int) (*orderdomain.Entity, error) {
 	return &order, nil
 }
 
-func (o *OrdersRepository) GetByUser(username string) ([]*orderdomain.Entity, error) {
-	rows, err := o.db.QueryxContext(o.ctx, `SELECT * FROM orders WHERE user_name = $1 ORDER BY created_date`, username)
+func (o *OrdersRepository) GetByUser(ctx context.Context, username string) ([]*orderdomain.Entity, error) {
+	rows, err := o.db.QueryxContext(ctx, `SELECT * FROM orders WHERE user_name = $1 ORDER BY created_date`, username)
 	if err != nil {
 		return nil, err
 	}
@@ -97,8 +96,8 @@ func (o *OrdersRepository) GetByUser(username string) ([]*orderdomain.Entity, er
 	return orders, nil
 }
 
-func (o *OrdersRepository) Create(order *orderdomain.Entity) error {
-	tx, err := o.db.BeginTxx(o.ctx, nil)
+func (o *OrdersRepository) Create(ctx context.Context, order *orderdomain.Entity) error {
+	tx, err := o.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -112,7 +111,7 @@ func (o *OrdersRepository) Create(order *orderdomain.Entity) error {
 		}
 	}()
 
-	if _, execErr = tx.ExecContext(o.ctx,
+	if _, execErr = tx.ExecContext(ctx,
 		`INSERT INTO orders (id, user_name, status) VALUES ($1, $2, $3)`,
 		order.ID, order.Username, order.Status); execErr != nil {
 		var pgErr *pq.Error

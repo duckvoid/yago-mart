@@ -14,16 +14,15 @@ const WithdrawalsTable = "withdrawals"
 var embedInitWithdrawalsMigration embed.FS
 
 type WithdrawalsRepository struct {
-	ctx context.Context
-	db  *sqlx.DB
+	db *sqlx.DB
 }
 
-func NewWithdrawalsRepository(ctx context.Context, db *sqlx.DB) *WithdrawalsRepository {
-	return &WithdrawalsRepository{ctx: ctx, db: db}
+func NewWithdrawalsRepository(db *sqlx.DB) *WithdrawalsRepository {
+	return &WithdrawalsRepository{db: db}
 }
 
-func (w *WithdrawalsRepository) GetByUser(username string) ([]*withdrawalsdomain.Entity, error) {
-	rows, err := w.db.QueryxContext(w.ctx, `SELECT * FROM withdrawals WHERE user_name = $1 ORDER BY processed_at`, username)
+func (w *WithdrawalsRepository) GetByUser(ctx context.Context, username string) ([]*withdrawalsdomain.Entity, error) {
+	rows, err := w.db.QueryxContext(ctx, `SELECT * FROM withdrawals WHERE user_name = $1 ORDER BY processed_at`, username)
 	if err != nil {
 		return nil, err
 	}

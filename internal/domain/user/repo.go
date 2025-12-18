@@ -1,7 +1,9 @@
 package user
 
+import "context"
+
 type Repository interface {
-	All() ([]*Entity, error)
-	Get(username string) (*Entity, error)
-	Create(user *Entity) error
+	All(ctx context.Context) ([]*Entity, error)
+	Get(ctx context.Context, username string) (*Entity, error)
+	Create(ctx context.Context, user *Entity) error
 }

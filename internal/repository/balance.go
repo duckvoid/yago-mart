@@ -15,18 +15,17 @@ const BalanceTable = "balance"
 var embedInitBalanceMigration embed.FS
 
 type BalanceRepository struct {
-	ctx context.Context
-	db  *sqlx.DB
+	db *sqlx.DB
 }
 
-func NewBalanceRepository(ctx context.Context, db *sqlx.DB) *BalanceRepository {
-	return &BalanceRepository{ctx: ctx, db: db}
+func NewBalanceRepository(db *sqlx.DB) *BalanceRepository {
+	return &BalanceRepository{db: db}
 }
 
-func (b *BalanceRepository) Get(username string) (*balancedomain.Entity, error) {
+func (b *BalanceRepository) Get(ctx context.Context, username string) (*balancedomain.Entity, error) {
 	var balance balancedomain.Entity
 
-	row := b.db.QueryRowxContext(b.ctx, `SELECT * FROM balance WHERE user_name = $1`, username)
+	row := b.db.QueryRowxContext(ctx, `SELECT * FROM balance WHERE user_name = $1`, username)
 
 	if err := row.StructScan(&balance); err != nil {
 		return nil, err
@@ -35,11 +34,11 @@ func (b *BalanceRepository) Get(username string) (*balancedomain.Entity, error) 
 	return &balance, nil
 
 }
-func (b *BalanceRepository) Accrual(username string, value float64) error {
+func (b *BalanceRepository) Accrual(ctx context.Context, username string, value float64) error {
 	return nil
 }
-func (b *BalanceRepository) Withdrawal(username string, value float64) error {
-	tx, err := b.db.BeginTxx(b.ctx, nil)
+func (b *BalanceRepository) Withdrawal(ctx context.Context, username string, value float64) error {
+	tx, err := b.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -54,7 +53,7 @@ func (b *BalanceRepository) Withdrawal(username string, value float64) error {
 	}()
 
 	var res sql.Result
-	if res, execErr = tx.ExecContext(b.ctx,
+	if res, execErr = tx.ExecContext(ctx,
 		`UPDATE balance SET current = current - $1 WHERE user_name = $2 AND current >= $1`,
 		value, username); err != nil {
 		return err

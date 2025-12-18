@@ -18,16 +18,15 @@ const UsersTable = "users"
 var embedInitUsersMigration embed.FS
 
 type UsersRepository struct {
-	ctx context.Context
-	db  *sqlx.DB
+	db *sqlx.DB
 }
 
-func NewUsersRepository(ctx context.Context, db *sqlx.DB) *UsersRepository {
-	return &UsersRepository{ctx: ctx, db: db}
+func NewUsersRepository(db *sqlx.DB) *UsersRepository {
+	return &UsersRepository{db: db}
 }
 
-func (u *UsersRepository) All() ([]*userdomain.Entity, error) {
-	rows, err := u.db.QueryxContext(u.ctx, `SELECT * FROM users`)
+func (u *UsersRepository) All(ctx context.Context) ([]*userdomain.Entity, error) {
+	rows, err := u.db.QueryxContext(ctx, `SELECT * FROM users`)
 	if err != nil {
 		return nil, err
 	}
@@ -52,10 +51,10 @@ func (u *UsersRepository) All() ([]*userdomain.Entity, error) {
 	return users, nil
 }
 
-func (u *UsersRepository) Get(username string) (*userdomain.Entity, error) {
+func (u *UsersRepository) Get(ctx context.Context, username string) (*userdomain.Entity, error) {
 	var user userdomain.Entity
 
-	row := u.db.QueryRowxContext(u.ctx, `SELECT * FROM users WHERE name = $1`, username)
+	row := u.db.QueryRowxContext(ctx, `SELECT * FROM users WHERE name = $1`, username)
 
 	if err := row.StructScan(&user); err != nil {
 
@@ -68,8 +67,8 @@ func (u *UsersRepository) Get(username string) (*userdomain.Entity, error) {
 	return &user, nil
 }
 
-func (u *UsersRepository) Create(user *userdomain.Entity) error {
-	tx, err := u.db.BeginTxx(u.ctx, nil)
+func (u *UsersRepository) Create(ctx context.Context, user *userdomain.Entity) error {
+	tx, err := u.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -83,7 +82,7 @@ func (u *UsersRepository) Create(user *userdomain.Entity) error {
 		}
 	}()
 
-	if _, execErr = tx.ExecContext(u.ctx,
+	if _, execErr = tx.ExecContext(ctx,
 		`INSERT INTO users (name, password) VALUES ($1, $2)`,
 		user.Name, user.Password); execErr != nil {
 		var pgErr *pq.Error

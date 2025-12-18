@@ -39,10 +39,10 @@ func NewRepository(ctx context.Context, database string) (*Repository, error) {
 	}
 
 	repo := &Repository{
-		Users:       NewUsersRepository(ctx, db),
-		Orders:      NewOrdersRepository(ctx, db),
-		Balance:     NewBalanceRepository(ctx, db),
-		Withdrawals: NewWithdrawalsRepository(ctx, db),
+		Users:       NewUsersRepository(db),
+		Orders:      NewOrdersRepository(db),
+		Balance:     NewBalanceRepository(db),
+		Withdrawals: NewWithdrawalsRepository(db),
 	}
 
 	return repo, nil

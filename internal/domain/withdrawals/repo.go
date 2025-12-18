@@ -1,5 +1,7 @@
 package withdrawals
 
+import "context"
+
 type Repository interface {
-	GetByUser(username string) ([]*Entity, error)
+	GetByUser(ctx context.Context, username string) ([]*Entity, error)
 }

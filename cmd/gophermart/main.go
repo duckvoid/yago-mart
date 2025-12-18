@@ -37,7 +37,7 @@ func main() {
 	}
 
 	userSvc := service.NewUserService(repo.Users)
-	authSvc := service.NewAuthService(userSvc)
+	authSvc := service.NewAuthService(cfg.Secret, userSvc)
 	orderSvc := service.NewOrderService(repo.Orders)
 	balanceSvc := service.NewBalanceService(repo.Balance, orderSvc)
 	withdrawalsSvc := service.NewWithdrawalsService(repo.Withdrawals)

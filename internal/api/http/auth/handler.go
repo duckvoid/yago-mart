@@ -27,7 +27,7 @@ func (a *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.svc.Register(req.Login, req.Password); err != nil {
+	if err := a.svc.Register(r.Context(), req.Login, req.Password); err != nil {
 		switch {
 		case errors.Is(err, user.ErrAlreadyExist):
 			http.Error(w, err.Error(), http.StatusConflict)
@@ -53,7 +53,7 @@ func (a *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := a.svc.Login(req.Login, req.Password)
+	token, err := a.svc.Login(r.Context(), req.Login, req.Password)
 	if err != nil {
 		switch {
 		case errors.Is(err, user.ErrNotFound):

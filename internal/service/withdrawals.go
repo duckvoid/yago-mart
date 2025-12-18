@@ -1,6 +1,10 @@
 package service
 
-import withdrawalsdomain "github.com/duckvoid/yago-mart/internal/domain/withdrawals"
+import (
+	"context"
+
+	withdrawalsdomain "github.com/duckvoid/yago-mart/internal/domain/withdrawals"
+)
 
 type WithdrawalsService struct {
 	repo withdrawalsdomain.Repository
@@ -10,6 +14,6 @@ func NewWithdrawalsService(repo withdrawalsdomain.Repository) *WithdrawalsServic
 	return &WithdrawalsService{repo: repo}
 }
 
-func (w *WithdrawalsService) UserWithdrawals(username string) ([]*withdrawalsdomain.Entity, error) {
-	return w.repo.GetByUser(username)
+func (w *WithdrawalsService) UserWithdrawals(ctx context.Context, username string) ([]*withdrawalsdomain.Entity, error) {
+	return w.repo.GetByUser(ctx, username)
 }

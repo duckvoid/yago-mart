@@ -25,7 +25,7 @@ func (b *Handler) Balance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	balance, err := b.svc.Get(user)
+	balance, err := b.svc.Get(r.Context(), user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -53,7 +53,7 @@ func (b *Handler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := b.svc.Withdrawal(user, req.OrderID, req.Sum); err != nil {
+	if err := b.svc.Withdrawal(r.Context(), user, req.OrderID, req.Sum); err != nil {
 		switch {
 		case errors.Is(err, order.ErrNotFound):
 			http.Error(w, err.Error(), http.StatusUnprocessableEntity)

@@ -26,7 +26,7 @@ func (h *Handler) Withdrawals(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	withdrawals, err := h.svc.UserWithdrawals(user)
+	withdrawals, err := h.svc.UserWithdrawals(r.Context(), user)
 	if err != nil {
 		switch {
 		case errors.Is(err, withdrawalsdomain.ErrNotFound):

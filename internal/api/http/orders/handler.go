@@ -58,7 +58,7 @@ func (o *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	if err := o.svc.Create(user, orderID); err != nil {
+	if err := o.svc.Create(r.Context(), user, orderID); err != nil {
 		switch {
 		case errors.Is(err, orderdomain.ErrCreatedByAnotherUser):
 			http.Error(w, err.Error(), http.StatusConflict)
@@ -83,7 +83,7 @@ func (o *Handler) List(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	orders, err := o.svc.UserOrders(user)
+	orders, err := o.svc.UserOrders(r.Context(), user)
 	if err != nil {
 		switch {
 		case errors.Is(err, orderdomain.ErrNotFound):
@@ -121,7 +121,7 @@ func (o *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	order, err := o.svc.Get(orderID)
+	order, err := o.svc.Get(r.Context(), orderID)
 	if err != nil {
 		switch {
 		case errors.Is(err, orderdomain.ErrNotFound):

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 
 	orderdomain "github.com/duckvoid/yago-mart/internal/domain/order"
@@ -14,7 +15,7 @@ func NewOrderService(repo orderdomain.Repository) *OrderService {
 	return &OrderService{repo: repo}
 }
 
-func (o *OrderService) Create(username string, orderID int) error {
+func (o *OrderService) Create(ctx context.Context, username string, orderID int) error {
 
 	//accrual := o.accrualSvc.Get(orderID)
 
@@ -25,10 +26,10 @@ func (o *OrderService) Create(username string, orderID int) error {
 		//Accrual: accrual,
 	}
 
-	err := o.repo.Create(order)
+	err := o.repo.Create(ctx, order)
 	if err != nil {
 		if errors.Is(err, orderdomain.ErrAlreadyExist) {
-			existedOrder, err := o.Get(orderID)
+			existedOrder, err := o.Get(ctx, orderID)
 			if err != nil {
 				return err
 			}
@@ -44,12 +45,12 @@ func (o *OrderService) Create(username string, orderID int) error {
 	return nil
 }
 
-func (o *OrderService) Get(id int) (*orderdomain.Entity, error) {
-	return o.repo.Get(id)
+func (o *OrderService) Get(ctx context.Context, id int) (*orderdomain.Entity, error) {
+	return o.repo.Get(ctx, id)
 }
 
-func (o *OrderService) UserOrders(username string) ([]*orderdomain.Entity, error) {
-	return o.repo.GetByUser(username)
+func (o *OrderService) UserOrders(ctx context.Context, username string) ([]*orderdomain.Entity, error) {
+	return o.repo.GetByUser(ctx, username)
 }
 
 func (o *OrderService) LuhnValidation(number int) bool {

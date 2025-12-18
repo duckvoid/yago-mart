@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"time"
 
 	"github.com/duckvoid/yago-mart/internal/logger"
@@ -9,26 +10,29 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var secretKey = "secretKey"
+var singingKey []byte
 
 type AuthService struct {
 	userSvc *UserService
 }
 
-func NewAuthService(userSvc *UserService) *AuthService {
-	return &AuthService{userSvc: userSvc}
+func NewAuthService(signingKey string, userSvc *UserService) *AuthService {
+	singingKey = []byte(signingKey)
+	return &AuthService{
+		userSvc: userSvc,
+	}
 }
 
-func (a *AuthService) Register(username, password string) error {
+func (a *AuthService) Register(ctx context.Context, username, password string) error {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
-	return a.userSvc.Create(username, string(passwordHash))
+	return a.userSvc.Create(ctx, username, string(passwordHash))
 }
 
-func (a *AuthService) Login(username, password string) (string, error) {
-	user, err := a.userSvc.Get(username)
+func (a *AuthService) Login(ctx context.Context, username, password string) (string, error) {
+	user, err := a.userSvc.Get(ctx, username)
 	if err != nil {
 		return "", err
 	}
@@ -46,7 +50,7 @@ func (a *AuthService) Login(username, password string) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	tokenString, err := token.SignedString([]byte(secretKey))
+	tokenString, err := token.SignedString(singingKey)
 	if err != nil {
 		logger.Log.Error("CompareHashAndPassword", err.Error())
 
@@ -58,7 +62,7 @@ func (a *AuthService) Login(username, password string) (string, error) {
 
 func AuthToken(authToken string) (string, error) {
 	token, err := jwt.ParseWithClaims(authToken, &jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(secretKey), nil
+		return []byte(singingKey), nil
 	})
 	if err != nil {
 		return "", err

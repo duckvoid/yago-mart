@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -20,20 +21,27 @@ import (
 )
 
 func main() {
-
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 	defer cancel()
 
+	if err := run(ctx); err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func run(ctx context.Context) error {
+
 	cfg, err := config.LoadServerConfig()
 	if err != nil {
-		panic(fmt.Errorf("failed to load server config: %w", err))
+		return fmt.Errorf("failed to load server config: %w", err)
 	}
 
 	logger.New(cfg.LogLevel)
 
 	repo, err := repository.NewRepository(ctx, cfg.Database)
 	if err != nil {
-		panic(fmt.Errorf("failed to init repository: %w", err))
+		return fmt.Errorf("failed to init repository: %w", err)
 	}
 
 	userSvc := service.NewUserService(repo.Users)
@@ -51,5 +59,5 @@ func main() {
 
 	srv := server.New(cfg, handlers)
 
-	srv.Run(ctx)
+	return srv.Run(ctx)
 }

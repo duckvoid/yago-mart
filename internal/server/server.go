@@ -27,13 +27,13 @@ func New(cfg *config.ServerConfig, handlers httpapi.Handlers) *Server {
 	}
 }
 
-func (s *Server) Run(ctx context.Context) {
+func (s *Server) Run(ctx context.Context) error {
 	logger.Log.Info("Starting server on", slog.String("address", s.srv.Addr))
 
 	listener, err := net.Listen("tcp", s.srv.Addr)
 	if err != nil {
 		logger.Log.Error(err.Error())
-		return
+		return err
 	}
 
 	errCh := make(chan error, 1)
@@ -46,11 +46,13 @@ func (s *Server) Run(ctx context.Context) {
 	select {
 	case err := <-errCh:
 		logger.Log.Error(err.Error())
-		return
+		return err
 	case <-ctx.Done():
 		if err := s.srv.Shutdown(ctx); err != nil {
-			return
+			return err
 		}
 		logger.Log.Info("Server shutting down")
 	}
+
+	return nil
 }

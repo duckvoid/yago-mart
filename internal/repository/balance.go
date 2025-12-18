@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"errors"
 
 	balancedomain "github.com/duckvoid/yago-mart/internal/domain/balance"
 	"github.com/jmoiron/sqlx"
@@ -35,7 +36,7 @@ func (b *BalanceRepository) Get(ctx context.Context, username string) (*balanced
 
 }
 func (b *BalanceRepository) Accrual(ctx context.Context, username string, value float64) error {
-	return nil
+	return errors.New("not implemented")
 }
 func (b *BalanceRepository) Withdrawal(ctx context.Context, username string, value float64) error {
 	tx, err := b.db.BeginTxx(ctx, nil)

@@ -16,9 +16,7 @@ const (
 	ansiBrightRedFaint = "\033[91;2m"
 )
 
-var Log *slog.Logger
-
-func New(level string) {
+func New(level string) *slog.Logger {
 	lvl := &slog.LevelVar{}
 	switch level {
 	case "debug":
@@ -33,7 +31,7 @@ func New(level string) {
 		lvl.Set(slog.LevelInfo)
 	}
 
-	Log = slog.New(
+	return slog.New(
 		tint.NewHandler(os.Stdout, &tint.Options{
 			Level:      lvl,
 			TimeFormat: time.DateTime,

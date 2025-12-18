@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"errors"
+	"log/slog"
 
 	userdomain "github.com/duckvoid/yago-mart/internal/domain/user"
 	"github.com/jackc/pgerrcode"
@@ -18,16 +19,18 @@ const UsersTable = "users"
 var embedInitUsersMigration embed.FS
 
 type UsersRepository struct {
-	db *sqlx.DB
+	db     *sqlx.DB
+	logger *slog.Logger
 }
 
-func NewUsersRepository(db *sqlx.DB) *UsersRepository {
-	return &UsersRepository{db: db}
+func NewUsersRepository(db *sqlx.DB, logger *slog.Logger) *UsersRepository {
+	return &UsersRepository{db: db, logger: logger}
 }
 
 func (u *UsersRepository) All(ctx context.Context) ([]*userdomain.Entity, error) {
 	rows, err := u.db.QueryxContext(ctx, `SELECT * FROM users`)
 	if err != nil {
+		u.logger.Error("Failed querying all users", "error", err)
 		return nil, err
 	}
 
@@ -43,6 +46,7 @@ func (u *UsersRepository) All(ctx context.Context) ([]*userdomain.Entity, error)
 		var user *userdomain.Entity
 		err = rows.StructScan(user)
 		if err != nil {
+			u.logger.Error("Failed while scanning user struct", "error", err)
 			return nil, err
 		}
 		users = append(users, user)
@@ -61,6 +65,7 @@ func (u *UsersRepository) Get(ctx context.Context, username string) (*userdomain
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, userdomain.ErrNotFound
 		}
+		u.logger.Error("Failed while scanning use struct", "error", err)
 		return nil, err
 	}
 
@@ -70,6 +75,7 @@ func (u *UsersRepository) Get(ctx context.Context, username string) (*userdomain
 func (u *UsersRepository) Create(ctx context.Context, user *userdomain.Entity) error {
 	tx, err := u.db.BeginTxx(ctx, nil)
 	if err != nil {
+		u.logger.Error("Failed creating transaction", "error", err)
 		return err
 	}
 
@@ -89,6 +95,7 @@ func (u *UsersRepository) Create(ctx context.Context, user *userdomain.Entity) e
 		if errors.As(execErr, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			return userdomain.ErrAlreadyExist
 		}
+		u.logger.Error("Failed while inserting user", "error", err)
 		return execErr
 	}
 

@@ -37,9 +37,9 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("failed to load server config: %w", err)
 	}
 
-	logger.New(cfg.LogLevel)
+	logger := logger.New(cfg.LogLevel)
 
-	repo, err := repository.NewRepository(ctx, cfg.Database)
+	repo, err := repository.NewRepository(ctx, cfg.Database, logger)
 	if err != nil {
 		return fmt.Errorf("failed to init repository: %w", err)
 	}

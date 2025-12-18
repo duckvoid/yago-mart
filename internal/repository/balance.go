@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"embed"
 	"errors"
+	"log/slog"
 
 	balancedomain "github.com/duckvoid/yago-mart/internal/domain/balance"
 	"github.com/jmoiron/sqlx"
@@ -16,11 +17,12 @@ const BalanceTable = "balance"
 var embedInitBalanceMigration embed.FS
 
 type BalanceRepository struct {
-	db *sqlx.DB
+	db     *sqlx.DB
+	logger *slog.Logger
 }
 
-func NewBalanceRepository(db *sqlx.DB) *BalanceRepository {
-	return &BalanceRepository{db: db}
+func NewBalanceRepository(db *sqlx.DB, logger *slog.Logger) *BalanceRepository {
+	return &BalanceRepository{db: db, logger: logger}
 }
 
 func (b *BalanceRepository) Get(ctx context.Context, username string) (*balancedomain.Entity, error) {
@@ -29,6 +31,7 @@ func (b *BalanceRepository) Get(ctx context.Context, username string) (*balanced
 	row := b.db.QueryRowxContext(ctx, `SELECT * FROM balance WHERE user_name = $1`, username)
 
 	if err := row.StructScan(&balance); err != nil {
+		b.logger.Error("Failed while getting balance", "user", username, "err", err)
 		return nil, err
 	}
 
@@ -41,6 +44,7 @@ func (b *BalanceRepository) Accrual(ctx context.Context, username string, value 
 func (b *BalanceRepository) Withdrawal(ctx context.Context, username string, value float64) error {
 	tx, err := b.db.BeginTxx(ctx, nil)
 	if err != nil {
+		b.logger.Error("Failed begin transaction while make withdrawal", "user", username, "err", err)
 		return err
 	}
 
@@ -57,6 +61,7 @@ func (b *BalanceRepository) Withdrawal(ctx context.Context, username string, val
 	if res, execErr = tx.ExecContext(ctx,
 		`UPDATE balance SET current = current - $1 WHERE user_name = $2 AND current >= $1`,
 		value, username); err != nil {
+		b.logger.Error("Failed while updating balance", "user", username, "err", err)
 		return err
 	}
 

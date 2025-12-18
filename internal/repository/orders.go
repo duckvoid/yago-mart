@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"errors"
+	"log/slog"
 
 	orderdomain "github.com/duckvoid/yago-mart/internal/domain/order"
 	"github.com/jackc/pgerrcode"
@@ -18,16 +19,18 @@ const OrdersTable = "orders"
 var embedInitOrdersMigration embed.FS
 
 type OrdersRepository struct {
-	db *sqlx.DB
+	db     *sqlx.DB
+	logger *slog.Logger
 }
 
-func NewOrdersRepository(db *sqlx.DB) *OrdersRepository {
-	return &OrdersRepository{db: db}
+func NewOrdersRepository(db *sqlx.DB, logger *slog.Logger) *OrdersRepository {
+	return &OrdersRepository{db: db, logger: logger}
 }
 
 func (o *OrdersRepository) All(ctx context.Context) ([]*orderdomain.Entity, error) {
 	rows, err := o.db.QueryxContext(ctx, `SELECT * FROM orders`)
 	if err != nil {
+		o.logger.Error("Failed while querying all orders", "error", err)
 		return nil, err
 	}
 
@@ -35,6 +38,7 @@ func (o *OrdersRepository) All(ctx context.Context) ([]*orderdomain.Entity, erro
 
 	err = rows.Err()
 	if err != nil {
+		o.logger.Error("Failed while iteration all orders rows", "error", err)
 		return nil, err
 	}
 
@@ -43,6 +47,7 @@ func (o *OrdersRepository) All(ctx context.Context) ([]*orderdomain.Entity, erro
 		var order *orderdomain.Entity
 		err = rows.StructScan(order)
 		if err != nil {
+			o.logger.Error("Failed while scanning all orders struct", "error", err)
 			return nil, err
 		}
 		orders = append(orders, order)
@@ -61,6 +66,7 @@ func (o *OrdersRepository) Get(ctx context.Context, id int) (*orderdomain.Entity
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, orderdomain.ErrNotFound
 		}
+		o.logger.Error("Failed while scanning order row", "id", id, "error", err)
 		return nil, err
 	}
 
@@ -70,6 +76,7 @@ func (o *OrdersRepository) Get(ctx context.Context, id int) (*orderdomain.Entity
 func (o *OrdersRepository) GetByUser(ctx context.Context, username string) ([]*orderdomain.Entity, error) {
 	rows, err := o.db.QueryxContext(ctx, `SELECT * FROM orders WHERE user_name = $1 ORDER BY created_date`, username)
 	if err != nil {
+		o.logger.Error("Failed while querying orders by user", "username", username, "error", err)
 		return nil, err
 	}
 
@@ -80,12 +87,14 @@ func (o *OrdersRepository) GetByUser(ctx context.Context, username string) ([]*o
 		var order orderdomain.Entity
 		err = rows.StructScan(&order)
 		if err != nil {
+			o.logger.Error("Failed while scanning order row", "username", username, "error", err)
 			return nil, err
 		}
 		orders = append(orders, &order)
 	}
 
 	if err := rows.Err(); err != nil {
+		o.logger.Error("Failed while scanning order rows", "error", err)
 		return nil, err
 	}
 
@@ -99,6 +108,7 @@ func (o *OrdersRepository) GetByUser(ctx context.Context, username string) ([]*o
 func (o *OrdersRepository) Create(ctx context.Context, order *orderdomain.Entity) error {
 	tx, err := o.db.BeginTxx(ctx, nil)
 	if err != nil {
+		o.logger.Error("Failed while beginning create order transaction", "error", err)
 		return err
 	}
 
@@ -122,6 +132,7 @@ func (o *OrdersRepository) Create(ctx context.Context, order *orderdomain.Entity
 			case pgerrcode.InvalidColumnReference:
 				return orderdomain.ErrUserNotFound
 			default:
+				o.logger.Error("Failed while creating order", "id", order.ID, "user_name", order.Username)
 				return execErr
 			}
 		}

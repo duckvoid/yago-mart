@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/duckvoid/yago-mart/internal/logger"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
@@ -39,7 +38,6 @@ func (a *AuthService) Login(ctx context.Context, username, password string) (str
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		logger.Log.Error("CompareHashAndPassword", err.Error())
 		return "", err
 	}
 
@@ -52,8 +50,6 @@ func (a *AuthService) Login(ctx context.Context, username, password string) (str
 
 	tokenString, err := token.SignedString(singingKey)
 	if err != nil {
-		logger.Log.Error("CompareHashAndPassword", err.Error())
-
 		return "", err
 	}
 

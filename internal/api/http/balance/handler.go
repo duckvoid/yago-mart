@@ -19,7 +19,11 @@ func NewBalanceHandler(service *service.BalanceService) *Handler {
 }
 
 func (b *Handler) Balance(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value("user").(string)
+	user, ok := r.Context().Value("user").(string)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 
 	balance, err := b.svc.Get(user)
 	if err != nil {
@@ -43,7 +47,11 @@ func (b *Handler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := r.Context().Value("user").(string)
+	user, ok := r.Context().Value("user").(string)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 
 	if err := b.svc.Withdrawal(user, req.OrderID, req.Sum); err != nil {
 		switch {

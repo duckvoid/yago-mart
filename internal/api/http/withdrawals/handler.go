@@ -20,7 +20,11 @@ func NewWithdrawalsHandler(service *service.WithdrawalsService) *Handler {
 }
 
 func (h *Handler) Withdrawals(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value("user").(string)
+	user, ok := r.Context().Value("user").(string)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 
 	withdrawals, err := h.svc.UserWithdrawals(user)
 	if err != nil {

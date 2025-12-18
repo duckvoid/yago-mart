@@ -53,8 +53,11 @@ func (o *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := r.Context().Value("user").(string)
-
+	user, ok := r.Context().Value("user").(string)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 	if err := o.svc.Create(user, orderID); err != nil {
 		switch {
 		case errors.Is(err, orderdomain.ErrCreatedByAnotherUser):
@@ -75,8 +78,11 @@ func (o *Handler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (o *Handler) List(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value("user").(string)
-
+	user, ok := r.Context().Value("user").(string)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 	orders, err := o.svc.UserOrders(user)
 	if err != nil {
 		switch {

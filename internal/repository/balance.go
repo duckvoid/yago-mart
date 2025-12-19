@@ -60,9 +60,9 @@ func (b *BalanceRepository) Withdrawal(ctx context.Context, username string, val
 	var res sql.Result
 	if res, execErr = tx.ExecContext(ctx,
 		`UPDATE balance SET current = current - $1 WHERE user_name = $2 AND current >= $1`,
-		value, username); err != nil {
+		value, username); execErr != nil {
 		b.logger.Error("Failed while updating balance", "user", username, "err", err)
-		return err
+		return execErr
 	}
 
 	rows, _ := res.RowsAffected()

@@ -4,25 +4,27 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 
 	balancedomain "github.com/duckvoid/yago-mart/internal/domain/balance"
 	"github.com/duckvoid/yago-mart/internal/domain/order"
-	"github.com/duckvoid/yago-mart/internal/logger"
 	"github.com/duckvoid/yago-mart/internal/service"
 )
 
 type Handler struct {
-	svc *service.BalanceService
+	svc    *service.BalanceService
+	logger *slog.Logger
 }
 
-func NewBalanceHandler(service *service.BalanceService) *Handler {
-	return &Handler{svc: service}
+func NewBalanceHandler(service *service.BalanceService, logger *slog.Logger) *Handler {
+	return &Handler{svc: service, logger: logger.With(slog.String("handler", "balance"))}
 }
 
 func (b *Handler) Balance(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().Value("user").(string)
 	if !ok {
+		b.logger.Error("failed get user from context")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -38,6 +40,7 @@ func (b *Handler) Balance(w http.ResponseWriter, r *http.Request) {
 		Current:   balance.Current,
 		Withdrawn: balance.Withdrawn,
 	}); err != nil {
+		b.logger.Error("failed to write response", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -45,7 +48,7 @@ func (b *Handler) Balance(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write(respBuf.Bytes()); err != nil {
-		logger.Log.Error(err.Error())
+		b.logger.Error("failed to write response", "error", err)
 	}
 }
 
@@ -54,12 +57,14 @@ func (b *Handler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
+		b.logger.Error("failed to decode request", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	user, ok := r.Context().Value("user").(string)
 	if !ok {
+		b.logger.Error("failed get user from context")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

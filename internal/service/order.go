@@ -99,5 +99,11 @@ func (o *OrderService) LuhnValidation(number int) bool {
 		sum += digit
 	}
 
-	return sum%10 == 0
+	if sum%10 == 0 {
+		return true
+	}
+
+	o.logger.Error("Order Luhn validation error", "order_id", number)
+
+	return false
 }

@@ -5,19 +5,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/duckvoid/yago-mart/internal/domain/user"
-	"github.com/duckvoid/yago-mart/internal/logger"
 	"github.com/duckvoid/yago-mart/internal/service"
 )
 
 type Handler struct {
-	svc *service.AuthService
+	svc    *service.AuthService
+	logger *slog.Logger
 }
 
-func NewAuthHandler(service *service.AuthService) *Handler {
-	return &Handler{svc: service}
+func NewAuthHandler(service *service.AuthService, logger *slog.Logger) *Handler {
+	return &Handler{svc: service, logger: logger.With(slog.String("handler", "auth"))}
 }
 
 func (a *Handler) Register(w http.ResponseWriter, r *http.Request) {
@@ -25,6 +26,7 @@ func (a *Handler) Register(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
+		a.logger.Error("failed to decode request", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -44,6 +46,7 @@ func (a *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		Message: fmt.Sprintf("User %s succesfully register", req.Login),
 		Code:    http.StatusOK,
 	}); err != nil {
+		a.logger.Error("failed to encode response", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -51,7 +54,7 @@ func (a *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write(respBuf.Bytes()); err != nil {
-		logger.Log.Error(err.Error())
+		a.logger.Error("failed to write response", "error", err)
 	}
 
 }
@@ -61,6 +64,7 @@ func (a *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
+		a.logger.Error("failed to decode request", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -82,6 +86,7 @@ func (a *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		Code:    http.StatusOK,
 		Token:   token,
 	}); err != nil {
+		a.logger.Error("failed to encode response", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -89,7 +94,7 @@ func (a *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write(respBuf.Bytes()); err != nil {
-		logger.Log.Error(err.Error())
+		a.logger.Error("failed to write response", "error", err)
 	}
 
 }

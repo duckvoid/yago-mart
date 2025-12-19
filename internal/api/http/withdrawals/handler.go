@@ -4,26 +4,28 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
 
 	withdrawalsdomain "github.com/duckvoid/yago-mart/internal/domain/withdrawals"
-	"github.com/duckvoid/yago-mart/internal/logger"
 	"github.com/duckvoid/yago-mart/internal/service"
 )
 
 type Handler struct {
-	svc *service.WithdrawalsService
+	svc    *service.WithdrawalsService
+	logger *slog.Logger
 }
 
-func NewWithdrawalsHandler(service *service.WithdrawalsService) *Handler {
-	return &Handler{svc: service}
+func NewWithdrawalsHandler(service *service.WithdrawalsService, logger *slog.Logger) *Handler {
+	return &Handler{svc: service, logger: logger.With(slog.String("handler", "withdrawals"))}
 }
 
 func (h *Handler) Withdrawals(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().Value("user").(string)
 	if !ok {
+		h.logger.Error("failed to get user from context")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -50,6 +52,7 @@ func (h *Handler) Withdrawals(w http.ResponseWriter, r *http.Request) {
 
 	var respBuf bytes.Buffer
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		h.logger.Error("failed to encode response", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -57,6 +60,6 @@ func (h *Handler) Withdrawals(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write(respBuf.Bytes()); err != nil {
-		logger.Log.Error(err.Error())
+		h.logger.Error("failed to write response", "error", err)
 	}
 }

@@ -51,10 +51,10 @@ func run(ctx context.Context) error {
 	withdrawalsSvc := service.NewWithdrawalsService(repo.Withdrawals, slogger)
 
 	handlers := httpapi.Handlers{
-		Orders:      ordersapi.NewOrdersHandler(orderSvc),
-		Auth:        authapi.NewAuthHandler(authSvc),
-		Balance:     balanceapi.NewBalanceHandler(balanceSvc),
-		Withdrawals: withdrawalsapi.NewWithdrawalsHandler(withdrawalsSvc),
+		Orders:      ordersapi.NewOrdersHandler(orderSvc, slogger),
+		Auth:        authapi.NewAuthHandler(authSvc, slogger),
+		Balance:     balanceapi.NewBalanceHandler(balanceSvc, slogger),
+		Withdrawals: withdrawalsapi.NewWithdrawalsHandler(withdrawalsSvc, slogger),
 	}
 
 	srv := server.New(cfg, handlers, slogger)

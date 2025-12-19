@@ -6,11 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
 
 	orderdomain "github.com/duckvoid/yago-mart/internal/domain/order"
-	"github.com/duckvoid/yago-mart/internal/logger"
 	"github.com/duckvoid/yago-mart/internal/service"
 	"github.com/go-chi/chi/v5"
 )
@@ -18,15 +18,17 @@ import (
 const maxBodySizeMib = 25
 
 type Handler struct {
-	svc *service.OrderService
+	svc    *service.OrderService
+	logger *slog.Logger
 }
 
-func NewOrdersHandler(service *service.OrderService) *Handler {
-	return &Handler{svc: service}
+func NewOrdersHandler(service *service.OrderService, logger *slog.Logger) *Handler {
+	return &Handler{svc: service, logger: logger.With(slog.String("handler", "orders"))}
 }
 
 func (o *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Content-Type") != "text/plain" {
+		o.logger.Error("invalid content type", slog.String("content-type", r.Header.Get("Content-Type")))
 		http.Error(w, "Content-Type must be text/plain", http.StatusUnsupportedMediaType)
 		return
 	}
@@ -38,6 +40,7 @@ func (o *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	bodyBytes, err := io.ReadAll(tee)
 	if err != nil {
+		o.logger.Error("failed to read body", err)
 		return
 	}
 
@@ -45,6 +48,7 @@ func (o *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	orderID, err := strconv.Atoi(string(bodyBytes))
 	if err != nil {
+		o.logger.Error("failed to parse orderID", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -56,6 +60,7 @@ func (o *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	user, ok := r.Context().Value("user").(string)
 	if !ok {
+		o.logger.Error("failed to get user from context")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -76,6 +81,7 @@ func (o *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		Message: fmt.Sprintf("Order %d succesfully created", orderID),
 		Code:    http.StatusAccepted,
 	}); err != nil {
+		o.logger.Error("failed to encode response", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -83,13 +89,14 @@ func (o *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write(respBuf.Bytes()); err != nil {
-		logger.Log.Error(err.Error())
+		o.logger.Error("failed to write response", err)
 	}
 }
 
 func (o *Handler) List(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().Value("user").(string)
 	if !ok {
+		o.logger.Error("failed to get user from context")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -115,6 +122,7 @@ func (o *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	var respBuf bytes.Buffer
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		o.logger.Error("failed to encode response", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -122,7 +130,7 @@ func (o *Handler) List(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write(respBuf.Bytes()); err != nil {
-		logger.Log.Error(err.Error())
+		o.logger.Error("failed to write response", err)
 	}
 }
 
@@ -131,6 +139,7 @@ func (o *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 	orderID, err := strconv.Atoi(number)
 	if err != nil {
+		o.logger.Error("failed to parse order id", slog.String("number", number))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -157,6 +166,7 @@ func (o *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		Status:  string(order.Status),
 		Accrual: order.Accrual,
 	}); err != nil {
+		o.logger.Error("failed to encode response", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -164,6 +174,6 @@ func (o *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write(respBuf.Bytes()); err != nil {
-		logger.Log.Error(err.Error())
+		o.logger.Error("failed to write response", err)
 	}
 }

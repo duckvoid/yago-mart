@@ -7,33 +7,37 @@ import (
 )
 
 type ServerConfig struct {
-	Address  string `mapstructure:"address" validate:"required,hostname_port"`
-	LogLevel string `mapstructure:"log_level"`
-	Database string `mapstructure:"database" validate:"required"`
-	Secret   string `mapstructure:"secret" validate:"required,uuid"`
+	Address        string `mapstructure:"run_address" validate:"required,hostname_port"`
+	LogLevel       string `mapstructure:"log_level"`
+	Database       string `mapstructure:"database_uri" validate:"required"`
+	Secret         string `mapstructure:"secret" validate:"required,uuid"`
+	AccrualAddress string `mapstructure:"accrual_system_address" validate:"required,hostname_port"`
 }
 
 func LoadServerConfig() (*ServerConfig, error) {
 	loader := NewLoader()
 
-	loader.vp.SetDefault("address", "localhost:8080")
+	loader.vp.SetDefault("run_address", "localhost:8080")
 	loader.vp.SetDefault("log_level", "debug")
-	loader.vp.SetDefault("database", "")
+	loader.vp.SetDefault("database_uri", "")
 	loader.vp.SetDefault("secret", "")
+	loader.vp.SetDefault("accrual_system_address", "")
 
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
-	fs.StringP("address", "a", "", "The address to public metrics.")
+	fs.StringP("run_address", "a", "", "The address to public metrics.")
 	fs.StringP("log_level", "l", "info", "Log level")
-	fs.StringP("database", "d", "", "Database")
+	fs.StringP("database_uri", "d", "", "Database")
+	fs.StringP("accrual_system_address", "r", "", "Accrual System Address")
 
 	loader.EnableEnvParse()
 	_ = loader.SetFlags(fs)
 
 	cfg := &ServerConfig{
-		Address:  loader.vp.GetString("address"),
-		LogLevel: loader.vp.GetString("log_level"),
-		Database: loader.vp.GetString("database"),
-		Secret:   loader.vp.GetString("secret"),
+		Address:        loader.vp.GetString("run_address"),
+		LogLevel:       loader.vp.GetString("log_level"),
+		Database:       loader.vp.GetString("database_uri"),
+		Secret:         loader.vp.GetString("secret"),
+		AccrualAddress: loader.vp.GetString("accrual_system_address"),
 	}
 
 	if err := loader.Validation(cfg); err != nil {

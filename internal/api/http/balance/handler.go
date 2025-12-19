@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/duckvoid/yago-mart/internal/api/http/middlewares"
 	balancedomain "github.com/duckvoid/yago-mart/internal/domain/balance"
 	"github.com/duckvoid/yago-mart/internal/domain/order"
 	"github.com/duckvoid/yago-mart/internal/service"
@@ -22,7 +23,7 @@ func NewBalanceHandler(service *service.BalanceService, logger *slog.Logger) *Ha
 }
 
 func (b *Handler) Balance(w http.ResponseWriter, r *http.Request) {
-	user, ok := r.Context().Value("user").(string)
+	user, ok := middlewares.UserFromCtx(r.Context())
 	if !ok {
 		b.logger.Error("failed get user from context")
 		w.WriteHeader(http.StatusUnauthorized)
@@ -62,7 +63,7 @@ func (b *Handler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := r.Context().Value("user").(string)
+	user, ok := middlewares.UserFromCtx(r.Context())
 	if !ok {
 		b.logger.Error("failed get user from context")
 		w.WriteHeader(http.StatusUnauthorized)

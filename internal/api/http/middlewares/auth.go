@@ -8,6 +8,10 @@ import (
 	"github.com/duckvoid/yago-mart/internal/service"
 )
 
+type UserCtxKeyType struct{}
+
+var userCtxKey UserCtxKeyType
+
 func AuthenticateMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -25,6 +29,11 @@ func AuthenticateMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), "user", user)))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), userCtxKey, user)))
 	})
+}
+
+func UserFromCtx(ctx context.Context) (string, bool) {
+	u, ok := ctx.Value(userCtxKey).(string)
+	return u, ok
 }

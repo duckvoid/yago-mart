@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/duckvoid/yago-mart/internal/api/http/middlewares"
 	orderdomain "github.com/duckvoid/yago-mart/internal/domain/order"
 	"github.com/duckvoid/yago-mart/internal/service"
 	"github.com/go-chi/chi/v5"
@@ -58,7 +59,7 @@ func (o *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := r.Context().Value("user").(string)
+	user, ok := middlewares.UserFromCtx(r.Context())
 	if !ok {
 		o.logger.Error("failed to get user from context")
 		w.WriteHeader(http.StatusUnauthorized)
@@ -94,7 +95,7 @@ func (o *Handler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (o *Handler) List(w http.ResponseWriter, r *http.Request) {
-	user, ok := r.Context().Value("user").(string)
+	user, ok := middlewares.UserFromCtx(r.Context())
 	if !ok {
 		o.logger.Error("failed to get user from context")
 		w.WriteHeader(http.StatusUnauthorized)

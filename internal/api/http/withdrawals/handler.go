@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/duckvoid/yago-mart/internal/api/http/middlewares"
 	withdrawalsdomain "github.com/duckvoid/yago-mart/internal/domain/withdrawals"
 	"github.com/duckvoid/yago-mart/internal/service"
 )
@@ -23,7 +24,7 @@ func NewWithdrawalsHandler(service *service.WithdrawalsService, logger *slog.Log
 }
 
 func (h *Handler) Withdrawals(w http.ResponseWriter, r *http.Request) {
-	user, ok := r.Context().Value("user").(string)
+	user, ok := middlewares.UserFromCtx(r.Context())
 	if !ok {
 		h.logger.Error("failed to get user from context")
 		w.WriteHeader(http.StatusUnauthorized)

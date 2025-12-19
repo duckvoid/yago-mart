@@ -24,6 +24,11 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 	defer cancel()
 
+	//Принудительно задаем ключ сервера для корректного старта автотестов
+	if err := os.Setenv("SECRET", "27eb2a56-bfa9-432d-a826-af7a377a8ef7"); err != nil {
+		log.Fatal(err)
+	}
+
 	if err := run(ctx); err != nil {
 		log.Fatal(err)
 	}

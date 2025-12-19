@@ -81,7 +81,7 @@ func (a *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var respBuf bytes.Buffer
-	if err := json.NewEncoder(w).Encode(LoginResponse{
+	if err := json.NewEncoder(&respBuf).Encode(LoginResponse{
 		Message: fmt.Sprintf("User %s succesfully login", req.Login),
 		Code:    http.StatusOK,
 		Token:   token,

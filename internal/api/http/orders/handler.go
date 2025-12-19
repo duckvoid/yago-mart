@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -78,8 +77,9 @@ func (o *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var respBuf bytes.Buffer
-	if err := json.NewEncoder(w).Encode(CreateResponse{
-		Message: fmt.Sprintf("Order %d succesfully created", orderID),
+	if err := json.NewEncoder(&respBuf).Encode(CreateResponse{
+		OrderID: orderID,
+		Message: "Order succesfully created",
 		Code:    http.StatusAccepted,
 	}); err != nil {
 		o.logger.Error("failed to encode response")
@@ -122,7 +122,7 @@ func (o *Handler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var respBuf bytes.Buffer
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
+	if err := json.NewEncoder(&respBuf).Encode(resp); err != nil {
 		o.logger.Error("failed to encode response", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -162,7 +162,7 @@ func (o *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var respBuf bytes.Buffer
-	if err := json.NewEncoder(w).Encode(OrderResponse{
+	if err := json.NewEncoder(&respBuf).Encode(OrderResponse{
 		Number:  strconv.Itoa(order.ID),
 		Status:  string(order.Status),
 		Accrual: order.Accrual,

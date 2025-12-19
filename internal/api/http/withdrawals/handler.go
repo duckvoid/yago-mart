@@ -52,7 +52,7 @@ func (h *Handler) Withdrawals(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var respBuf bytes.Buffer
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
+	if err := json.NewEncoder(&respBuf).Encode(resp); err != nil {
 		h.logger.Error("failed to encode response", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

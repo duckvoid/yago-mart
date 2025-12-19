@@ -37,7 +37,7 @@ func (b *Handler) Balance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var respBuf bytes.Buffer
-	if err := json.NewEncoder(w).Encode(CurrentBalanceResponse{
+	if err := json.NewEncoder(&respBuf).Encode(CurrentBalanceResponse{
 		Current:   balance.Current,
 		Withdrawn: balance.Withdrawn,
 	}); err != nil {

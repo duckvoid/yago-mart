@@ -75,9 +75,11 @@ func (o *OrderService) UserOrders(ctx context.Context, username string) ([]*orde
 	return order, nil
 }
 
-func (o *OrderService) LuhnValidation(number int) bool {
+func (o *OrderService) LuhnValidation(orderID int) bool {
 
 	var digits []int
+
+	number := orderID
 
 	for number > 0 {
 		digits = append(digits, number%10)
@@ -103,7 +105,7 @@ func (o *OrderService) LuhnValidation(number int) bool {
 		return true
 	}
 
-	o.logger.Error("Order Luhn validation error", "order_id", number)
+	o.logger.Error("Order ID Luhn validation error", slog.Int("number", orderID))
 
 	return false
 }

@@ -3,16 +3,18 @@ package service
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	orderdomain "github.com/duckvoid/yago-mart/internal/domain/order"
 )
 
 type OrderService struct {
-	repo orderdomain.Repository
+	repo   orderdomain.Repository
+	logger *slog.Logger
 }
 
-func NewOrderService(repo orderdomain.Repository) *OrderService {
-	return &OrderService{repo: repo}
+func NewOrderService(repo orderdomain.Repository, logger *slog.Logger) *OrderService {
+	return &OrderService{repo: repo, logger: logger}
 }
 
 func (o *OrderService) Create(ctx context.Context, username string, orderID int) error {
@@ -29,14 +31,18 @@ func (o *OrderService) Create(ctx context.Context, username string, orderID int)
 	err := o.repo.Create(ctx, order)
 	if err != nil {
 		if errors.Is(err, orderdomain.ErrAlreadyExist) {
+			o.logger.Warn("Order already exists", "id", orderID)
+
 			existedOrder, err := o.Get(ctx, orderID)
 			if err != nil {
 				return err
 			}
 
 			if username != existedOrder.Username {
+				o.logger.Error("Order already was created by another user", "error", err)
 				return orderdomain.ErrCreatedByAnotherUser
 			}
+
 		}
 
 		return err
@@ -46,11 +52,27 @@ func (o *OrderService) Create(ctx context.Context, username string, orderID int)
 }
 
 func (o *OrderService) Get(ctx context.Context, id int) (*orderdomain.Entity, error) {
-	return o.repo.Get(ctx, id)
+	order, err := o.repo.Get(ctx, id)
+	if err != nil {
+		if errors.Is(err, orderdomain.ErrNotFound) {
+			o.logger.Error("Order not found", "id", id)
+			return nil, orderdomain.ErrNotFound
+		}
+		return nil, err
+	}
+	return order, nil
 }
 
 func (o *OrderService) UserOrders(ctx context.Context, username string) ([]*orderdomain.Entity, error) {
-	return o.repo.GetByUser(ctx, username)
+	order, err := o.repo.GetByUser(ctx, username)
+	if err != nil {
+		if errors.Is(err, orderdomain.ErrNotFound) {
+			o.logger.Error("Order not found", "username", username)
+			return nil, orderdomain.ErrNotFound
+		}
+		return nil, err
+	}
+	return order, nil
 }
 
 func (o *OrderService) LuhnValidation(number int) bool {

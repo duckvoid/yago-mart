@@ -37,18 +37,18 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("failed to load server config: %w", err)
 	}
 
-	logger := logger.New(cfg.LogLevel)
+	slogger := logger.New(cfg.LogLevel)
 
-	repo, err := repository.NewRepository(ctx, cfg.Database, logger)
+	repo, err := repository.NewRepository(ctx, cfg.Database, slogger)
 	if err != nil {
 		return fmt.Errorf("failed to init repository: %w", err)
 	}
 
-	userSvc := service.NewUserService(repo.Users)
-	authSvc := service.NewAuthService(cfg.Secret, userSvc)
-	orderSvc := service.NewOrderService(repo.Orders)
-	balanceSvc := service.NewBalanceService(repo.Balance, orderSvc)
-	withdrawalsSvc := service.NewWithdrawalsService(repo.Withdrawals)
+	userSvc := service.NewUserService(repo.Users, slogger)
+	authSvc := service.NewAuthService(cfg.Secret, userSvc, slogger)
+	orderSvc := service.NewOrderService(repo.Orders, slogger)
+	balanceSvc := service.NewBalanceService(repo.Balance, orderSvc, slogger)
+	withdrawalsSvc := service.NewWithdrawalsService(repo.Withdrawals, slogger)
 
 	handlers := httpapi.Handlers{
 		Orders:      ordersapi.NewOrdersHandler(orderSvc),

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -13,18 +14,21 @@ var singingKey []byte
 
 type AuthService struct {
 	userSvc *UserService
+	logger  *slog.Logger
 }
 
-func NewAuthService(signingKey string, userSvc *UserService) *AuthService {
+func NewAuthService(signingKey string, userSvc *UserService, logger *slog.Logger) *AuthService {
 	singingKey = []byte(signingKey)
 	return &AuthService{
 		userSvc: userSvc,
+		logger:  logger,
 	}
 }
 
 func (a *AuthService) Register(ctx context.Context, username, password string) error {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
+		a.logger.Error("failed to generate password")
 		return err
 	}
 	return a.userSvc.Create(ctx, username, string(passwordHash))
@@ -38,6 +42,7 @@ func (a *AuthService) Login(ctx context.Context, username, password string) (str
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
+		a.logger.Error("User passwords do not match", "username", username)
 		return "", err
 	}
 
@@ -50,6 +55,7 @@ func (a *AuthService) Login(ctx context.Context, username, password string) (str
 
 	tokenString, err := token.SignedString(singingKey)
 	if err != nil {
+		a.logger.Error("Failed to sign token", "username", username)
 		return "", err
 	}
 

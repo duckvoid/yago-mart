@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log/slog"
 	"strconv"
 
 	balancedomain "github.com/duckvoid/yago-mart/internal/domain/balance"
@@ -10,12 +11,14 @@ import (
 type BalanceService struct {
 	repo     balancedomain.Repository
 	orderSvc *OrderService
+	logger   *slog.Logger
 }
 
-func NewBalanceService(repo balancedomain.Repository, orderSvc *OrderService) *BalanceService {
+func NewBalanceService(repo balancedomain.Repository, orderSvc *OrderService, logger *slog.Logger) *BalanceService {
 	return &BalanceService{
 		repo:     repo,
 		orderSvc: orderSvc,
+		logger:   logger,
 	}
 }
 
@@ -35,6 +38,7 @@ func (b *BalanceService) Accrual(ctx context.Context, username string, value flo
 func (b *BalanceService) Withdrawal(ctx context.Context, username string, orderID string, value float64) error {
 	id, err := strconv.Atoi(orderID)
 	if err != nil {
+		b.logger.Error("failed to parse order id while make withdrawal", "orderID", orderID, "err", err)
 		return err
 	}
 

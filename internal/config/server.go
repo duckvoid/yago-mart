@@ -21,7 +21,7 @@ func LoadServerConfig() (*ServerConfig, error) {
 	loader.vp.SetDefault("log_level", "debug")
 	loader.vp.SetDefault("database_uri", "")
 	loader.vp.SetDefault("secret", "")
-	loader.vp.SetDefault("accrual_system_address", "")
+	loader.vp.SetDefault("accrual_system_address", "localhost:8081")
 
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fs.StringP("run_address", "a", "", "The address to public metrics.")

@@ -57,7 +57,7 @@ func run(ctx context.Context) error {
 		Withdrawals: withdrawalsapi.NewWithdrawalsHandler(withdrawalsSvc),
 	}
 
-	srv := server.New(cfg, handlers)
+	srv := server.New(cfg, handlers, slogger)
 
 	return srv.Run(ctx)
 }

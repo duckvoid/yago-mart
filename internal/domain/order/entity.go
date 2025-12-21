@@ -6,7 +6,7 @@ type Status string
 
 const (
 	Invalid    Status = "INVALID"
-	Registered Status = "REGISTERED"
+	New        Status = "NEW"
 	Processed  Status = "PROCESSED"
 	Processing Status = "PROCESSING"
 )

@@ -88,7 +88,7 @@ func (o *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusAccepted)
 	if _, err := w.Write(respBuf.Bytes()); err != nil {
 		o.logger.Error("failed to write response", "error", err)
 	}

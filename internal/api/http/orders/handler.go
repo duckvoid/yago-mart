@@ -112,9 +112,9 @@ func (o *Handler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var resp ListResponse
+	resp := make([]OrderResponse, 0, len(orders))
 	for _, order := range orders {
-		resp.Orders = append(resp.Orders, OrderResponse{
+		resp = append(resp, OrderResponse{
 			Number:     strconv.Itoa(order.ID),
 			Status:     string(order.Status),
 			Accrual:    order.Accrual,

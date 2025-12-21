@@ -17,10 +17,6 @@ type ListRequest struct {
 	Username string `json:"username"`
 }
 
-type ListResponse struct {
-	Orders []OrderResponse
-}
-
 type OrderResponse struct {
 	Number     string    `json:"number"`
 	Status     string    `json:"status"`

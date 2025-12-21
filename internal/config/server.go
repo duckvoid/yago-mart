@@ -11,7 +11,7 @@ type ServerConfig struct {
 	LogLevel       string `mapstructure:"log_level"`
 	Database       string `mapstructure:"database_uri" validate:"required"`
 	Secret         string `mapstructure:"secret" validate:"required,uuid"`
-	AccrualAddress string `mapstructure:"accrual_system_address" validate:"required,hostname_port"`
+	AccrualAddress string `mapstructure:"accrual_system_address" validate:"required"`
 }
 
 func LoadServerConfig() (*ServerConfig, error) {
@@ -21,13 +21,13 @@ func LoadServerConfig() (*ServerConfig, error) {
 	loader.vp.SetDefault("log_level", "debug")
 	loader.vp.SetDefault("database_uri", "")
 	loader.vp.SetDefault("secret", "")
-	loader.vp.SetDefault("accrual_system_address", "localhost:8081")
+	loader.vp.SetDefault("accrual_system_address", "")
 
 	fs := pflag.NewFlagSet("", pflag.ContinueOnError)
 	fs.StringP("run_address", "a", "localhost:8080", "The address to public metrics.")
 	fs.StringP("log_level", "l", "info", "Log level")
 	fs.StringP("database_uri", "d", "", "Database")
-	fs.StringP("accrual_system_address", "r", "localhost:8081", "Accrual System Address")
+	fs.StringP("accrual_system_address", "r", "", "Accrual System Address")
 
 	loader.EnableEnvParse()
 	_ = loader.SetFlags(fs)

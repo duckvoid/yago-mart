@@ -41,15 +41,29 @@ func (a *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token, err := a.svc.Login(r.Context(), req.Login, req.Password)
+	if err != nil {
+		switch {
+		case errors.Is(err, user.ErrNotFound):
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
 	var respBuf bytes.Buffer
 	if err := json.NewEncoder(&respBuf).Encode(RegisterResponse{
-		Message: fmt.Sprintf("User %s succesfully register", req.Login),
+		Message: fmt.Sprintf("User %s succesfully register and authenticated", req.Login),
 		Code:    http.StatusOK,
 	}); err != nil {
 		a.logger.Error("failed to encode response", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	//По ТЗ передаем токен в хедере
+	w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -90,6 +104,9 @@ func (a *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	//По ТЗ передаем токен в хедере
+	w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

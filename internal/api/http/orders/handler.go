@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/duckvoid/yago-mart/internal/api/http/middlewares"
 	orderdomain "github.com/duckvoid/yago-mart/internal/domain/order"
@@ -115,9 +116,10 @@ func (o *Handler) List(w http.ResponseWriter, r *http.Request) {
 	var resp ListResponse
 	for _, order := range orders {
 		resp.Orders = append(resp.Orders, OrderResponse{
-			Number:  strconv.Itoa(order.ID),
-			Status:  string(order.Status),
-			Accrual: order.Accrual,
+			Number:     strconv.Itoa(order.ID),
+			Status:     string(order.Status),
+			Accrual:    order.Accrual,
+			UploadedAt: order.CreatedDate.Format(time.RFC3339),
 		})
 	}
 

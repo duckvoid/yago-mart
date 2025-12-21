@@ -15,6 +15,6 @@ type Entity struct {
 	ID          int       `db:"id"`
 	Username    string    `db:"user_name"`
 	Status      Status    `db:"status"`
-	Accrual     int       `db:"accrual"`
+	Accrual     float64   `db:"accrual"`
 	CreatedDate time.Time `db:"created_date"`
 }

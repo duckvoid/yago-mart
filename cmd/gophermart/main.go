@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/duckvoid/yago-mart/internal/accrual"
 	httpapi "github.com/duckvoid/yago-mart/internal/api/http"
 	authapi "github.com/duckvoid/yago-mart/internal/api/http/auth"
 	balanceapi "github.com/duckvoid/yago-mart/internal/api/http/balance"
@@ -49,9 +50,11 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("failed to init repository: %w", err)
 	}
 
+	accrualClient := accrual.New(cfg.AccrualAddress)
+
 	userSvc := service.NewUserService(repo.Users, slogger)
 	authSvc := service.NewAuthService(cfg.Secret, userSvc, slogger)
-	orderSvc := service.NewOrderService(repo.Orders, slogger)
+	orderSvc := service.NewOrderService(repo.Orders, accrualClient, slogger)
 	balanceSvc := service.NewBalanceService(repo.Balance, orderSvc, slogger)
 	withdrawalsSvc := service.NewWithdrawalsService(repo.Withdrawals, slogger)
 

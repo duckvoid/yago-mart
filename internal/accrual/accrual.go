@@ -23,9 +23,9 @@ func (a *Accrual) GetOrder(ctx context.Context, orderID string) (*order.Accrual,
 	if err != nil {
 		switch resp.StatusCode() {
 		case http.StatusNoContent:
-			return nil, OrderNotRegistered
+			return nil, ErrOrderNotRegistered
 		case http.StatusTooManyRequests:
-			return nil, RateLimitExceeded
+			return nil, ErrRateLimitExceeded
 		default:
 			return nil, err
 		}

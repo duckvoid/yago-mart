@@ -125,7 +125,7 @@ func (o *OrderService) accrualProcess(ctx context.Context, order *orderdomain.En
 	for {
 		select {
 		case <-ticker.C:
-			accrual, err := o.accrual.GetOrder(timeoutCtx, strconv.Itoa(order.ID))
+			accrual, err := o.accrual.GetOrder(ctx, strconv.Itoa(order.ID))
 			if err != nil {
 				o.logger.Error("Accrual error", "error", err)
 				continue

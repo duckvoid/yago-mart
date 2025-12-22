@@ -3,6 +3,6 @@ package accrual
 import "errors"
 
 var (
-	OrderNotRegistered = errors.New("order not registered")
-	RateLimitExceeded  = errors.New("rate limit exceeded")
+	ErrOrderNotRegistered = errors.New("order not registered")
+	ErrRateLimitExceeded  = errors.New("rate limit exceeded")
 )

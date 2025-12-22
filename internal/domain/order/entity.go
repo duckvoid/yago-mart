@@ -2,19 +2,34 @@ package order
 
 import "time"
 
-type Status string
+type StatusOrder string
+
+type StatusAccrual string
 
 const (
-	Invalid    Status = "INVALID"
-	New        Status = "NEW"
-	Processed  Status = "PROCESSED"
-	Processing Status = "PROCESSING"
+	StatusOrderInvalid    StatusOrder = "INVALID"
+	StatusOrderNew        StatusOrder = "NEW"
+	StatusOrderProcessed  StatusOrder = "PROCESSED"
+	StatusOrderProcessing StatusOrder = "PROCESSING"
+)
+
+const (
+	StatusAccrualRegistred  StatusAccrual = "REGISTRED"
+	StatusAccrualInvalid    StatusAccrual = "INVALID"
+	StatusAccrualProcessed  StatusAccrual = "PROCESSED"
+	StatusAccrualProcessing StatusAccrual = "PROCESSING"
 )
 
 type Entity struct {
-	ID          int       `db:"id"`
-	Username    string    `db:"user_name"`
-	Status      Status    `db:"status"`
-	Accrual     float64   `db:"accrual"`
-	CreatedDate time.Time `db:"created_date"`
+	ID          int         `db:"id"`
+	Username    string      `db:"user_name"`
+	Status      StatusOrder `db:"status"`
+	Accrual     float64     `db:"accrual"`
+	CreatedDate time.Time   `db:"created_date"`
+}
+
+type Accrual struct {
+	OrderID string
+	Status  StatusAccrual
+	Accrual float64
 }

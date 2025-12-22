@@ -24,7 +24,7 @@ func (o *OrderService) Create(ctx context.Context, username string, orderID int)
 	order := &orderdomain.Entity{
 		ID:       orderID,
 		Username: username,
-		Status:   orderdomain.New,
+		Status:   orderdomain.StatusOrderNew,
 		//Accrual: accrual,
 	}
 

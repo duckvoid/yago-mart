@@ -8,3 +8,7 @@ type Repository interface {
 	GetByUser(ctx context.Context, username string) ([]*Entity, error)
 	Create(ctx context.Context, order *Entity) error
 }
+
+type AccrualClient interface {
+	GetOrder(ctx context.Context, orderID string) (*Accrual, error)
+}

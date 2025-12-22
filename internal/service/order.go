@@ -113,11 +113,13 @@ func (o *OrderService) LuhnValidation(orderID int) bool {
 }
 
 func (o *OrderService) accrualProcess(ctx context.Context, order *orderdomain.Entity) {
+	o.logger.Info("Start accrual processing for order", "id", order.ID)
+	defer o.logger.Info("End accrual processing for order", "id", order.ID)
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, 120*time.Second)
 	defer cancel()
 
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
 	for {

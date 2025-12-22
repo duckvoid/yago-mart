@@ -48,7 +48,7 @@ func (o *OrderService) Create(ctx context.Context, username string, orderID int)
 		return err
 	}
 
-	go o.accrualProcess(ctx, order)
+	go o.accrualProcess(order)
 
 	return nil
 }
@@ -112,20 +112,20 @@ func (o *OrderService) LuhnValidation(orderID int) bool {
 	return false
 }
 
-func (o *OrderService) accrualProcess(ctx context.Context, order *orderdomain.Entity) {
+func (o *OrderService) accrualProcess(order *orderdomain.Entity) {
 	o.logger.Info("Start accrual processing for order", "id", order.ID)
 	defer o.logger.Info("End accrual processing for order", "id", order.ID)
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, 120*time.Second)
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			accrual, err := o.accrual.GetOrder(ctx, strconv.Itoa(order.ID))
+			accrual, err := o.accrual.GetOrder(timeoutCtx, strconv.Itoa(order.ID))
 			if err != nil {
 				o.logger.Error("Accrual error", "error", err)
 				continue
@@ -135,7 +135,7 @@ func (o *OrderService) accrualProcess(ctx context.Context, order *orderdomain.En
 
 			switch accrual.Status {
 			case orderdomain.StatusAccrualProcessing, orderdomain.StatusAccrualRegistred:
-				if err := o.repo.UpdateStatus(ctx, order.ID, orderdomain.StatusOrderProcessing); err != nil {
+				if err := o.repo.UpdateStatus(timeoutCtx, order.ID, orderdomain.StatusOrderProcessing); err != nil {
 					o.logger.Error("Update status error", "error", err)
 					return
 				}
@@ -143,7 +143,7 @@ func (o *OrderService) accrualProcess(ctx context.Context, order *orderdomain.En
 			case orderdomain.StatusAccrualProcessed:
 				order.Status = orderdomain.StatusOrderProcessed
 				order.Accrual = accrual.Accrual
-				if err := o.repo.Update(ctx, order); err != nil {
+				if err := o.repo.Update(timeoutCtx, order); err != nil {
 					o.logger.Error("Update order", "error", err)
 					return
 				}
@@ -151,7 +151,7 @@ func (o *OrderService) accrualProcess(ctx context.Context, order *orderdomain.En
 				return
 
 			case orderdomain.StatusAccrualInvalid:
-				if err := o.repo.UpdateStatus(ctx, order.ID, orderdomain.StatusOrderInvalid); err != nil {
+				if err := o.repo.UpdateStatus(timeoutCtx, order.ID, orderdomain.StatusOrderInvalid); err != nil {
 					o.logger.Error("Update status error", "error", err)
 					return
 				}
@@ -160,13 +160,10 @@ func (o *OrderService) accrualProcess(ctx context.Context, order *orderdomain.En
 
 			default:
 				o.logger.Warn("Accrual unrecognized status", "id", order.ID, "status", accrual.Status)
-				return
+				continue
 			}
 		case <-timeoutCtx.Done():
-			o.logger.Warn("Accrual processing timeout", "id", order.ID)
-			return
-		case <-ctx.Done():
-			o.logger.Warn("Accrual processing context canceled", "id", order.ID)
+			o.logger.Warn("Accrual processing timeout", "id", order.ID, "error", timeoutCtx.Err())
 			return
 
 		}

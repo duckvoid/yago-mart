@@ -39,7 +39,7 @@ func (o *OrderService) Create(ctx context.Context, username string, orderID int)
 			}
 
 			if username != existedOrder.Username {
-				o.logger.Error("Order already was created by another user", "error", err)
+				o.logger.Error("Order already was created by another user", "id", orderID, "username", username)
 				return orderdomain.ErrCreatedByAnotherUser
 			}
 

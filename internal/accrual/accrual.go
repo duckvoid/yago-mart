@@ -3,7 +3,6 @@ package accrual
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -37,14 +36,27 @@ func (a *Accrual) GetOrder(ctx context.Context, orderID string) (*order.Accrual,
 		return nil, err
 	}
 
-	status, ok := result.Status.(order.StatusAccrual)
-	if !ok {
-		return nil, errors.New("invalid status accrual response")
+	status, err := parseAccrualStatus(result.Status)
+	if err != nil {
+		return nil, err
 	}
 
 	return &order.Accrual{
 		OrderID: result.Order,
-		Status:  result.Status,
+		Status:  status,
 		Accrual: result.Accrual,
 	}, nil
+}
+
+func parseAccrualStatus(status string) (order.StatusAccrual, error) {
+	switch status {
+	case string(order.StatusAccrualInvalid),
+		string(order.StatusAccrualRegistred),
+		string(order.StatusAccrualProcessing),
+		string(order.StatusAccrualProcessed):
+		return order.StatusAccrual(status), nil
+	default:
+		return "", fmt.Errorf("invalid status accrual response: %s", status)
+
+	}
 }

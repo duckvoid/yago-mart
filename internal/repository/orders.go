@@ -140,3 +140,53 @@ func (o *OrdersRepository) Create(ctx context.Context, order *orderdomain.Entity
 
 	return nil
 }
+
+func (o *OrdersRepository) Update(ctx context.Context, order *orderdomain.Entity) error {
+	tx, err := o.db.BeginTxx(ctx, nil)
+	if err != nil {
+		o.logger.Error("Failed while beginning create order transaction", "error", err)
+		return err
+	}
+
+	var execErr error
+	defer func() {
+		if execErr != nil {
+			_ = tx.Rollback()
+		} else {
+			execErr = tx.Commit()
+		}
+	}()
+
+	if _, err := o.db.ExecContext(ctx,
+		`UPDATE orders SET status = $1 AND accrual = $2 WHERE id = $3`, order.Status, order.Accrual, order.ID); err != nil {
+		o.logger.Error("Failed while updating order", "id", order.ID, "user_name", order.Username)
+		return err
+	}
+
+	return nil
+}
+
+func (o *OrdersRepository) UpdateStatus(ctx context.Context, orderID int, status orderdomain.StatusOrder) error {
+	tx, err := o.db.BeginTxx(ctx, nil)
+	if err != nil {
+		o.logger.Error("Failed while beginning create order transaction", "error", err)
+		return err
+	}
+
+	var execErr error
+	defer func() {
+		if execErr != nil {
+			_ = tx.Rollback()
+		} else {
+			execErr = tx.Commit()
+		}
+	}()
+
+	if _, err := o.db.ExecContext(ctx,
+		`UPDATE orders SET status = $1 WHERE id = $2`, status, orderID); err != nil {
+		o.logger.Error("Failed while updating order status ", "id", orderID, "status", status)
+		return err
+	}
+
+	return nil
+}

@@ -4,28 +4,28 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strconv"
+	"time"
 
 	orderdomain "github.com/duckvoid/yago-mart/internal/domain/order"
 )
 
 type OrderService struct {
-	repo   orderdomain.Repository
-	logger *slog.Logger
+	repo    orderdomain.Repository
+	logger  *slog.Logger
+	accrual orderdomain.AccrualClient
 }
 
-func NewOrderService(repo orderdomain.Repository, logger *slog.Logger) *OrderService {
-	return &OrderService{repo: repo, logger: logger}
+func NewOrderService(repo orderdomain.Repository, accrual orderdomain.AccrualClient, logger *slog.Logger) *OrderService {
+	return &OrderService{repo: repo, accrual: accrual, logger: logger}
 }
 
 func (o *OrderService) Create(ctx context.Context, username string, orderID int) error {
-
-	//accrual := o.accrualSvc.Get(orderID)
 
 	order := &orderdomain.Entity{
 		ID:       orderID,
 		Username: username,
 		Status:   orderdomain.StatusOrderNew,
-		//Accrual: accrual,
 	}
 
 	err := o.repo.Create(ctx, order)
@@ -108,4 +108,31 @@ func (o *OrderService) LuhnValidation(orderID int) bool {
 	o.logger.Error("Order ID Luhn validation error", slog.Int("number", orderID))
 
 	return false
+}
+
+func (o *OrderService) accrualProccess(ctx context.Context, orderID int) error {
+
+	timeoutCtx, cancel := context.WithTimeout(ctx, 120*time.Second)
+	defer cancel()
+
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			accrual, err := o.accrual.GetOrder(timeoutCtx, strconv.Itoa(orderID))
+			if err != nil {
+				o.logger.Warn("Accrual error", "error", err)
+				continue
+			}
+
+			switch accrual.Status {
+			case orderdomain.StatusAccrualInvalid, orderdomain.StatusAccrualProcessed:
+
+			}
+
+		}
+	}
+
 }

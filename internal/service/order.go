@@ -48,6 +48,8 @@ func (o *OrderService) Create(ctx context.Context, username string, orderID int)
 		return err
 	}
 
+	go o.accrualProcess(ctx, order)
+
 	return nil
 }
 
@@ -110,7 +112,7 @@ func (o *OrderService) LuhnValidation(orderID int) bool {
 	return false
 }
 
-func (o *OrderService) accrualProccess(ctx context.Context, orderID int) error {
+func (o *OrderService) accrualProcess(ctx context.Context, order *orderdomain.Entity) {
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, 120*time.Second)
 	defer cancel()
@@ -121,16 +123,49 @@ func (o *OrderService) accrualProccess(ctx context.Context, orderID int) error {
 	for {
 		select {
 		case <-ticker.C:
-			accrual, err := o.accrual.GetOrder(timeoutCtx, strconv.Itoa(orderID))
+			accrual, err := o.accrual.GetOrder(timeoutCtx, strconv.Itoa(order.ID))
 			if err != nil {
-				o.logger.Warn("Accrual error", "error", err)
+				o.logger.Error("Accrual error", "error", err)
 				continue
 			}
 
-			switch accrual.Status {
-			case orderdomain.StatusAccrualInvalid, orderdomain.StatusAccrualProcessed:
+			o.logger.Debug("Accrual processing", "id", order.ID, "status", accrual.Status)
 
+			switch accrual.Status {
+			case orderdomain.StatusAccrualProcessing, orderdomain.StatusAccrualRegistred:
+				if err := o.repo.UpdateStatus(ctx, order.ID, orderdomain.StatusOrderProcessing); err != nil {
+					o.logger.Error("Update status error", "error", err)
+					return
+				}
+
+			case orderdomain.StatusAccrualProcessed:
+				order.Status = orderdomain.StatusOrderProcessed
+				order.Accrual = accrual.Accrual
+				if err := o.repo.Update(ctx, order); err != nil {
+					o.logger.Error("Update order", "error", err)
+					return
+				}
+
+				return
+
+			case orderdomain.StatusAccrualInvalid:
+				if err := o.repo.UpdateStatus(ctx, order.ID, orderdomain.StatusOrderInvalid); err != nil {
+					o.logger.Error("Update status error", "error", err)
+					return
+				}
+
+				return
+
+			default:
+				o.logger.Warn("Accrual unrecognized status", "id", order.ID, "status", accrual.Status)
+				return
 			}
+		case <-timeoutCtx.Done():
+			o.logger.Warn("Accrual processing timeout", "id", order.ID)
+			return
+		case <-ctx.Done():
+			o.logger.Warn("Accrual processing context canceled", "id", order.ID)
+			return
 
 		}
 	}

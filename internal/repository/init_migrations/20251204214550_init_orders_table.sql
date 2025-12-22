@@ -4,7 +4,7 @@ CREATE TABLE orders (
     id BIGINT PRIMARY KEY,
     user_name TEXT REFERENCES users(name),
     status TEXT,
-    accrual INT DEFAULT 0,
+    accrual NUMERIC DEFAULT 0,
     created_date TIMESTAMP NOT NULL DEFAULT now()
 )
 -- +goose StatementEnd

@@ -157,8 +157,8 @@ func (o *OrdersRepository) Update(ctx context.Context, order *orderdomain.Entity
 		}
 	}()
 
-	if _, err := o.db.ExecContext(ctx,
-		`UPDATE orders SET status = $1 AND accrual = $2 WHERE id = $3`, string(order.Status), order.Accrual, order.ID); err != nil {
+	if _, err := tx.ExecContext(ctx,
+		`UPDATE orders SET status = $1, accrual = $2 WHERE id = $3`, string(order.Status), order.Accrual, order.ID); err != nil {
 		o.logger.Error("Failed while updating order", "id", order.ID, "user_name", order.Username)
 		return err
 	}
@@ -182,7 +182,7 @@ func (o *OrdersRepository) UpdateStatus(ctx context.Context, orderID int, status
 		}
 	}()
 
-	if _, err := o.db.ExecContext(ctx,
+	if _, err := tx.ExecContext(ctx,
 		`UPDATE orders SET status = $1 WHERE id = $2`, string(status), orderID); err != nil {
 		o.logger.Error("Failed while updating order status ", "id", orderID, "status", status)
 		return err

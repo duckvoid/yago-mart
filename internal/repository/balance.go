@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"embed"
-	"errors"
 	"log/slog"
 
 	balancedomain "github.com/duckvoid/yago-mart/internal/domain/balance"
@@ -38,10 +37,35 @@ func (b *BalanceRepository) Get(ctx context.Context, username string) (*balanced
 	return &balance, nil
 
 }
-func (b *BalanceRepository) Accrual(ctx context.Context, username string, value float64) error {
-	return errors.New("not implemented")
+
+func (b *BalanceRepository) Accrual(ctx context.Context, username string, accrual float64) error {
+	tx, err := b.db.BeginTxx(ctx, nil)
+	if err != nil {
+		b.logger.Error("Failed begin transaction while make withdrawal", "user", username, "err", err)
+		return err
+	}
+
+	var execErr error
+	defer func() {
+		if execErr != nil {
+			_ = tx.Rollback()
+		} else {
+			execErr = tx.Commit()
+		}
+	}()
+
+	if _, execErr = tx.ExecContext(ctx,
+		`INSERT INTO balance (user_name, current) VALUES ($1, $2) 
+				ON CONFLICT(user_name) DO UPDATE SET current = balance.current + EXCLUDED.current;`,
+		username, accrual); execErr != nil {
+		b.logger.Error("Failed while making accrual", "user", username, "err", execErr)
+		return execErr
+	}
+
+	return nil
 }
-func (b *BalanceRepository) Withdrawal(ctx context.Context, username string, value float64) error {
+
+func (b *BalanceRepository) Withdrawal(ctx context.Context, username string, withdrawal float64) error {
 	tx, err := b.db.BeginTxx(ctx, nil)
 	if err != nil {
 		b.logger.Error("Failed begin transaction while make withdrawal", "user", username, "err", err)
@@ -59,9 +83,9 @@ func (b *BalanceRepository) Withdrawal(ctx context.Context, username string, val
 
 	var res sql.Result
 	if res, execErr = tx.ExecContext(ctx,
-		`UPDATE balance SET current = current - $1 WHERE user_name = $2 AND current >= $1`,
-		value, username); execErr != nil {
-		b.logger.Error("Failed while updating balance", "user", username, "err", err)
+		`UPDATE balance SET current = current - $1, withdrawn = withdrawn + $1 WHERE user_name = $2 AND current >= $1`,
+		withdrawal, username); execErr != nil {
+		b.logger.Error("Failed while making withdrawal", "user", username, "err", execErr)
 		return execErr
 	}
 

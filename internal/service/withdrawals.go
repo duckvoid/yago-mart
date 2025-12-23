@@ -29,3 +29,11 @@ func (w *WithdrawalsService) UserWithdrawals(ctx context.Context, username strin
 	}
 	return withdrawals, nil
 }
+
+func (w *WithdrawalsService) Create(ctx context.Context, username string, orderID int, sum float64) error {
+	return w.repo.Create(ctx, &withdrawalsdomain.Entity{
+		Username: username,
+		OrderID:  orderID,
+		Sum:      sum,
+	})
+}

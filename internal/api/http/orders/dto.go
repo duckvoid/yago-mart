@@ -1,7 +1,5 @@
 package orders
 
-import "time"
-
 type CreateRequest struct {
 	Username string `json:"username"`
 	OrderID  int    `json:"order_id"`
@@ -18,8 +16,8 @@ type ListRequest struct {
 }
 
 type OrderResponse struct {
-	Number     string    `json:"number"`
-	Status     string    `json:"status"`
-	Accrual    float64   `json:"accrual"`
-	UploadedAt time.Time `json:"uploaded_at"`
+	Number     string  `json:"number"`
+	Status     string  `json:"status"`
+	Accrual    float64 `json:"accrual,omitempty"`
+	UploadedAt string  `json:"uploaded_at"`
 }

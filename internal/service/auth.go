@@ -64,7 +64,7 @@ func (a *AuthService) Login(ctx context.Context, username, password string) (str
 
 func AuthToken(authToken string) (string, error) {
 	token, err := jwt.ParseWithClaims(authToken, &jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(singingKey), nil
+		return singingKey, nil
 	})
 	if err != nil {
 		return "", err

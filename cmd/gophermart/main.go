@@ -52,16 +52,16 @@ func run(ctx context.Context) error {
 
 	accrualClient := accrual.New(cfg.AccrualAddress)
 
-	userSvc := service.NewUserService(repo.Users, slogger)
-	authSvc := service.NewAuthService(cfg.Secret, userSvc, slogger)
-	orderSvc := service.NewOrderService(repo.Orders, accrualClient, slogger)
-	balanceSvc := service.NewBalanceService(repo.Balance, orderSvc, slogger)
+	balanceSvc := service.NewBalanceService(repo.Balance, slogger)
 	withdrawalsSvc := service.NewWithdrawalsService(repo.Withdrawals, slogger)
+	userSvc := service.NewUserService(repo.Users, balanceSvc, slogger)
+	authSvc := service.NewAuthService(cfg.Secret, userSvc, slogger)
+	orderSvc := service.NewOrderService(repo.Orders, accrualClient, userSvc, slogger)
 
 	handlers := httpapi.Handlers{
 		Orders:      ordersapi.NewOrdersHandler(orderSvc, slogger),
 		Auth:        authapi.NewAuthHandler(authSvc, slogger),
-		Balance:     balanceapi.NewBalanceHandler(balanceSvc, slogger),
+		Balance:     balanceapi.NewBalanceHandler(balanceSvc, withdrawalsSvc, slogger),
 		Withdrawals: withdrawalsapi.NewWithdrawalsHandler(withdrawalsSvc, slogger),
 	}
 

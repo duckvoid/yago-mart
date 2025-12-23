@@ -11,13 +11,48 @@ import (
 )
 
 type OrderService struct {
-	repo    orderdomain.Repository
-	logger  *slog.Logger
-	accrual orderdomain.AccrualClient
+	repo          orderdomain.Repository
+	logger        *slog.Logger
+	accrualClient orderdomain.AccrualClient
+	userSvc       *UserService
 }
 
-func NewOrderService(repo orderdomain.Repository, accrual orderdomain.AccrualClient, logger *slog.Logger) *OrderService {
-	return &OrderService{repo: repo, accrual: accrual, logger: logger}
+func NewOrderService(
+	repo orderdomain.Repository,
+	accrualClient orderdomain.AccrualClient,
+	userSvc *UserService,
+	logger *slog.Logger,
+) *OrderService {
+	return &OrderService{
+		repo:          repo,
+		accrualClient: accrualClient,
+		userSvc:       userSvc,
+		logger:        logger,
+	}
+}
+
+func (o *OrderService) Get(ctx context.Context, id int) (*orderdomain.Entity, error) {
+	order, err := o.repo.Get(ctx, id)
+	if err != nil {
+		if errors.Is(err, orderdomain.ErrNotFound) {
+			o.logger.Error("Order not found", "id", id)
+			return nil, orderdomain.ErrNotFound
+		}
+		return nil, err
+	}
+	return order, nil
+}
+
+func (o *OrderService) UserOrders(ctx context.Context, username string) ([]*orderdomain.Entity, error) {
+	order, err := o.repo.GetByUser(ctx, username)
+	if err != nil {
+		if errors.Is(err, orderdomain.ErrNotFound) {
+			o.logger.Error("Order not found", "username", username)
+			return nil, orderdomain.ErrNotFound
+		}
+		return nil, err
+	}
+	return order, nil
 }
 
 func (o *OrderService) Create(ctx context.Context, username string, orderID int) error {
@@ -53,28 +88,65 @@ func (o *OrderService) Create(ctx context.Context, username string, orderID int)
 	return nil
 }
 
-func (o *OrderService) Get(ctx context.Context, id int) (*orderdomain.Entity, error) {
-	order, err := o.repo.Get(ctx, id)
-	if err != nil {
-		if errors.Is(err, orderdomain.ErrNotFound) {
-			o.logger.Error("Order not found", "id", id)
-			return nil, orderdomain.ErrNotFound
-		}
-		return nil, err
-	}
-	return order, nil
-}
+func (o *OrderService) accrualProcess(order *orderdomain.Entity) {
+	o.logger.Info("Start accrual processing for order", "id", order.ID)
 
-func (o *OrderService) UserOrders(ctx context.Context, username string) ([]*orderdomain.Entity, error) {
-	order, err := o.repo.GetByUser(ctx, username)
-	if err != nil {
-		if errors.Is(err, orderdomain.ErrNotFound) {
-			o.logger.Error("Order not found", "username", username)
-			return nil, orderdomain.ErrNotFound
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+
+	ticker := time.NewTicker(3 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			accrual, err := o.accrualClient.GetOrder(timeoutCtx, strconv.Itoa(order.ID))
+			if err != nil {
+				o.logger.Error("Accrual error", "error", err)
+				continue
+			}
+
+			o.logger.Debug("Accrual processing", "id", order.ID, "accrual", accrual)
+
+			switch accrual.Status {
+			case orderdomain.StatusAccrualProcessing, orderdomain.StatusAccrualRegistred:
+				if err := o.repo.UpdateStatus(timeoutCtx, order.ID, orderdomain.StatusOrderProcessing); err != nil {
+					return
+				}
+
+			case orderdomain.StatusAccrualProcessed:
+				if err := o.repo.UpdateStatusAndAccrual(timeoutCtx, order.ID, accrual.Sum, orderdomain.StatusOrderProcessed); err != nil {
+					return
+				}
+
+				if err := o.userSvc.Accrual(timeoutCtx, order.Username, accrual.Sum); err != nil {
+					return
+				}
+
+				o.logger.Info("Accrual processing done", "id", order.ID)
+
+				return
+
+			case orderdomain.StatusAccrualInvalid:
+				if err := o.repo.UpdateStatus(timeoutCtx, order.ID, orderdomain.StatusOrderInvalid); err != nil {
+					return
+				}
+
+				o.logger.Warn("Invalid status while processing accrual", "id", order.ID)
+
+				return
+
+			default:
+				o.logger.Warn("Accrual unrecognized status", "id", order.ID, "status", accrual.Status)
+				continue
+			}
+		case <-timeoutCtx.Done():
+			o.logger.Warn("Accrual processing timeout", "id", order.ID, "error", timeoutCtx.Err())
+			return
+
 		}
-		return nil, err
 	}
-	return order, nil
+
 }
 
 func (o *OrderService) LuhnValidation(orderID int) bool {
@@ -110,63 +182,4 @@ func (o *OrderService) LuhnValidation(orderID int) bool {
 	o.logger.Error("Order ID Luhn validation error", slog.Int("number", orderID))
 
 	return false
-}
-
-func (o *OrderService) accrualProcess(order *orderdomain.Entity) {
-	o.logger.Info("Start accrual processing for order", "id", order.ID)
-	defer o.logger.Info("End accrual processing for order", "id", order.ID)
-
-	timeoutCtx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
-	defer cancel()
-
-	ticker := time.NewTicker(3 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			accrual, err := o.accrual.GetOrder(timeoutCtx, strconv.Itoa(order.ID))
-			if err != nil {
-				o.logger.Error("Accrual error", "error", err)
-				continue
-			}
-
-			o.logger.Debug("Accrual processing", "id", order.ID, "status", accrual.Status)
-
-			switch accrual.Status {
-			case orderdomain.StatusAccrualProcessing, orderdomain.StatusAccrualRegistred:
-				if err := o.repo.UpdateStatus(timeoutCtx, order.ID, orderdomain.StatusOrderProcessing); err != nil {
-					o.logger.Error("Update status error", "error", err)
-					return
-				}
-
-			case orderdomain.StatusAccrualProcessed:
-				order.Status = orderdomain.StatusOrderProcessed
-				order.Accrual = accrual.Accrual
-				if err := o.repo.Update(timeoutCtx, order); err != nil {
-					o.logger.Error("Update order", "error", err)
-					return
-				}
-
-				return
-
-			case orderdomain.StatusAccrualInvalid:
-				if err := o.repo.UpdateStatus(timeoutCtx, order.ID, orderdomain.StatusOrderInvalid); err != nil {
-					o.logger.Error("Update status error", "error", err)
-					return
-				}
-
-				return
-
-			default:
-				o.logger.Warn("Accrual unrecognized status", "id", order.ID, "status", accrual.Status)
-				continue
-			}
-		case <-timeoutCtx.Done():
-			o.logger.Warn("Accrual processing timeout", "id", order.ID, "error", timeoutCtx.Err())
-			return
-
-		}
-	}
-
 }

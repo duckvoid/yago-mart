@@ -6,20 +6,23 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/duckvoid/yago-mart/internal/api/http/middlewares"
 	balancedomain "github.com/duckvoid/yago-mart/internal/domain/balance"
 	"github.com/duckvoid/yago-mart/internal/domain/order"
+	withdrawalsdomain "github.com/duckvoid/yago-mart/internal/domain/withdrawals"
 	"github.com/duckvoid/yago-mart/internal/service"
 )
 
 type Handler struct {
-	svc    *service.BalanceService
-	logger *slog.Logger
+	balanceSvc     *service.BalanceService
+	withdrawalsSvc *service.WithdrawalsService
+	logger         *slog.Logger
 }
 
-func NewBalanceHandler(service *service.BalanceService, logger *slog.Logger) *Handler {
-	return &Handler{svc: service, logger: logger.With(slog.String("handler", "balance"))}
+func NewBalanceHandler(service *service.BalanceService, withdrawalsSvc *service.WithdrawalsService, logger *slog.Logger) *Handler {
+	return &Handler{balanceSvc: service, withdrawalsSvc: withdrawalsSvc, logger: logger.With(slog.String("handler", "balance"))}
 }
 
 func (b *Handler) Balance(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +33,7 @@ func (b *Handler) Balance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	balance, err := b.svc.Get(r.Context(), user)
+	balance, err := b.balanceSvc.Get(r.Context(), user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -63,6 +66,13 @@ func (b *Handler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	orderID, err := strconv.Atoi(req.OrderID)
+	if err != nil {
+		b.logger.Error("failed to parse order id", slog.String("orderID", req.OrderID))
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	user, ok := middlewares.UserFromCtx(r.Context())
 	if !ok {
 		b.logger.Error("failed get user from context")
@@ -70,7 +80,9 @@ func (b *Handler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := b.svc.Withdrawal(r.Context(), user, req.OrderID, req.Sum); err != nil {
+	b.logger.Debug("Withdrawal", "request", req, "user", user)
+
+	if err := b.balanceSvc.Withdrawal(r.Context(), user, req.Sum); err != nil {
 		switch {
 		case errors.Is(err, order.ErrNotFound):
 			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -79,6 +91,17 @@ func (b *Handler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 		default:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
+		return
+	}
+
+	if err := b.withdrawalsSvc.Create(r.Context(), user, orderID, req.Sum); err != nil {
+		switch {
+		case errors.Is(err, withdrawalsdomain.ErrAlreadyExists):
+			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
 		return
 	}
 

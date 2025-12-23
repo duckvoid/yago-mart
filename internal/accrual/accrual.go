@@ -44,7 +44,7 @@ func (a *Accrual) GetOrder(ctx context.Context, orderID string) (*order.Accrual,
 	return &order.Accrual{
 		OrderID: result.Order,
 		Status:  status,
-		Accrual: result.Accrual,
+		Sum:     result.Accrual,
 	}, nil
 }
 

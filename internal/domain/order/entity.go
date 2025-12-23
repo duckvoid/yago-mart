@@ -31,5 +31,5 @@ type Entity struct {
 type Accrual struct {
 	OrderID string
 	Status  StatusAccrual
-	Accrual float64
+	Sum     float64
 }

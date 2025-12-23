@@ -66,7 +66,7 @@ func initTable(ctx context.Context, db *sqlx.DB, table string, embedMigration em
 		return nil
 	}
 
-	logger.Warn("Table %s doesn't exist. Creating...", slog.String("table", table))
+	logger.Warn("Table doesn't exist. Creating...", slog.String("table", table))
 
 	goose.SetBaseFS(embedMigration)
 	if err := goose.SetDialect("postgres"); err != nil {

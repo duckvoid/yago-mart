@@ -17,7 +17,7 @@ func AuthenticateMiddleware(next http.Handler) http.Handler {
 
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			w.WriteHeader(http.StatusUnauthorized)
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
 
@@ -25,7 +25,7 @@ func AuthenticateMiddleware(next http.Handler) http.Handler {
 
 		user, err := service.AuthToken(tokenString)
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
+			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
 

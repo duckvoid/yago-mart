@@ -5,16 +5,18 @@ import (
 	"errors"
 	"log/slog"
 
+	"github.com/duckvoid/yago-mart/internal/domain/balance"
 	userdomain "github.com/duckvoid/yago-mart/internal/domain/user"
 )
 
 type UserService struct {
-	repo   userdomain.Repository
-	logger *slog.Logger
+	repo       userdomain.Repository
+	logger     *slog.Logger
+	balanceSvc *BalanceService
 }
 
-func NewUserService(repo userdomain.Repository, logger *slog.Logger) *UserService {
-	return &UserService{repo: repo, logger: logger}
+func NewUserService(repo userdomain.Repository, balanceSvc *BalanceService, logger *slog.Logger) *UserService {
+	return &UserService{repo: repo, balanceSvc: balanceSvc, logger: logger}
 }
 
 func (u *UserService) All(ctx context.Context) ([]*userdomain.Entity, error) {
@@ -47,4 +49,16 @@ func (u *UserService) Create(ctx context.Context, username string, password stri
 		Password: password,
 	}
 	return u.repo.Create(ctx, user)
+}
+
+func (u *UserService) GetBalance(ctx context.Context, username string) (*balance.Entity, error) {
+	return u.balanceSvc.Get(ctx, username)
+}
+
+func (u *UserService) Accrual(ctx context.Context, username string, value float64) error {
+	return u.balanceSvc.Accrual(ctx, username, value)
+}
+
+func (u *UserService) Withdrawal(ctx context.Context, username string, value float64) error {
+	return u.balanceSvc.Withdrawal(ctx, username, value)
 }

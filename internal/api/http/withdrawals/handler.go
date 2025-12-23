@@ -42,7 +42,7 @@ func (h *Handler) Withdrawals(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var resp []WithdrawalResponse
+	resp := make([]WithdrawalResponse, 0, len(withdrawals))
 	for _, withdrawal := range withdrawals {
 		resp = append(resp, WithdrawalResponse{
 			OrderID:     strconv.Itoa(withdrawal.OrderID),

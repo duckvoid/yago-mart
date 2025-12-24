@@ -16,7 +16,7 @@ ACCRUAL_PORT=8081
 ACCRUAL_ADDRESS="localhost"
 DB_STRING="postgres://postgres:postgres@localhost:5432/mart?sslmode=disable"
 
-.PHONY: build build_gophermart mocks test audit test/cover upgradeable lint vuln tidy
+.PHONY: build build_gophermart test audit test/cover upgradeable lint vuln tidy
 
 build: tidy build_gophermart
 	@echo "gophermart built"
@@ -31,14 +31,8 @@ test/cover: audit
 	go test -v -race -buildvcs -coverprofile=./.coverage.out ./...
 	go tool cover -html=./.coverage.out
 
-audit: upgradeable mocks lint vuln
+audit: upgradeable lint vuln
 	@echo "Audit passed"
-
-mocks:
-	@echo "Mocks generating"
-	@go install github.com/gojuno/minimock/v3/cmd/minimock@latest
-	@mkdir -p "./mocks"
-	@go generate ./internal/...
 
 tidy:
 	@echo "Running tidy"

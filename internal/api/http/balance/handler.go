@@ -80,8 +80,6 @@ func (b *Handler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	b.logger.Debug("Withdrawal", "request", req, "user", user)
-
 	if err := b.balanceSvc.Withdrawal(r.Context(), user, req.Sum); err != nil {
 		switch {
 		case errors.Is(err, order.ErrNotFound):
@@ -106,5 +104,4 @@ func (b *Handler) BalanceWithdraw(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-
 }

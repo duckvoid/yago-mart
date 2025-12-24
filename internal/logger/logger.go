@@ -18,6 +18,7 @@ const (
 
 func New(level string) *slog.Logger {
 	lvl := &slog.LevelVar{}
+
 	switch level {
 	case "debug":
 		lvl.Set(slog.LevelDebug)

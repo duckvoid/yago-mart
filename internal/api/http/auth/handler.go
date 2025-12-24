@@ -62,7 +62,7 @@ func (a *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//По ТЗ передаем токен в хедере
+	// По ТЗ передаем токен в хедере
 	w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	w.Header().Set("Content-Type", "application/json")
@@ -70,7 +70,6 @@ func (a *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write(respBuf.Bytes()); err != nil {
 		a.logger.Error("failed to write response", "error", err)
 	}
-
 }
 
 func (a *Handler) Login(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +104,7 @@ func (a *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//По ТЗ передаем токен в хедере
+	// По ТЗ передаем токен в хедере
 	w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	w.Header().Set("Content-Type", "application/json")
@@ -113,5 +112,4 @@ func (a *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write(respBuf.Bytes()); err != nil {
 		a.logger.Error("failed to write response", "error", err)
 	}
-
 }

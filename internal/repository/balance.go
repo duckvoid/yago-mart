@@ -35,7 +35,6 @@ func (b *BalanceRepository) Get(ctx context.Context, username string) (*balanced
 	}
 
 	return &balance, nil
-
 }
 
 func (b *BalanceRepository) Accrual(ctx context.Context, username string, accrual float64) error {

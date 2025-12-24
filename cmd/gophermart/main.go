@@ -25,7 +25,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 	defer cancel()
 
-	//Принудительно задаем ключ сервера для корректного старта автотестов
+	// Принудительно задаем ключ сервера для корректного старта автотестов
 	if err := os.Setenv("SECRET", "27eb2a56-bfa9-432d-a826-af7a377a8ef7"); err != nil {
 		log.Fatal(err)
 	}
@@ -33,11 +33,9 @@ func main() {
 	if err := run(ctx); err != nil {
 		log.Fatal(err)
 	}
-
 }
 
 func run(ctx context.Context) error {
-
 	cfg, err := config.LoadServerConfig()
 	if err != nil {
 		return fmt.Errorf("failed to load server config: %w", err)
@@ -50,7 +48,7 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("failed to init repository: %w", err)
 	}
 
-	accrualClient := accrual.New(cfg.AccrualAddress)
+	accrualClient := accrual.New(cfg.AccrualAddress, slogger)
 
 	balanceSvc := service.NewBalanceService(repo.Balance, slogger)
 	withdrawalsSvc := service.NewWithdrawalsService(repo.Withdrawals, slogger)

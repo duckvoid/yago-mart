@@ -18,7 +18,6 @@ type Server struct {
 }
 
 func New(cfg *config.ServerConfig, handlers httpapi.Handlers, logger *slog.Logger) *Server {
-
 	apiRouter := httpapi.NewAPIRouter(handlers)
 
 	return &Server{

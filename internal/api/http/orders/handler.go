@@ -113,8 +113,6 @@ func (o *Handler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	o.logger.Debug("Listing orders", "count", len(orders), "user", user)
-
 	resp := make([]OrderResponse, 0, len(orders))
 	for _, order := range orders {
 		resp = append(resp, OrderResponse{

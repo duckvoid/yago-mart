@@ -36,8 +36,7 @@ func (o *OrdersRepository) All(ctx context.Context) ([]*orderdomain.Entity, erro
 
 	defer func() { _ = rows.Close() }()
 
-	err = rows.Err()
-	if err != nil {
+	if err := rows.Err(); err != nil {
 		o.logger.Error("Failed while iteration all orders rows", "error", err)
 		return nil, err
 	}

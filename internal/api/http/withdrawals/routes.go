@@ -6,11 +6,9 @@ import (
 )
 
 func NewWithdrawalsRoute(r chi.Router, handler *Handler) {
-
 	r.Group(func(r chi.Router) {
 		r.Use(middlewares.AuthenticateMiddleware)
 
 		r.Get("/withdrawals", handler.Withdrawals)
 	})
-
 }

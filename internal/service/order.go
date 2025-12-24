@@ -56,7 +56,6 @@ func (o *OrderService) UserOrders(ctx context.Context, username string) ([]*orde
 }
 
 func (o *OrderService) Create(ctx context.Context, username string, orderID int) error {
-
 	order := &orderdomain.Entity{
 		ID:       orderID,
 		Username: username,
@@ -146,11 +145,9 @@ func (o *OrderService) accrualProcess(order *orderdomain.Entity) {
 
 		}
 	}
-
 }
 
 func (o *OrderService) LuhnValidation(orderID int) bool {
-
 	var digits []int
 
 	number := orderID
